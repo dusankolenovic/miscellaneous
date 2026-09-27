@@ -1,0 +1,441 @@
+<title>Em Crossroads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#f2f3f1; --surface:#ffffff; --ink:#15171b; --muted:#5f656e; --line:#d9dcdf;
+  --accent:#f5b400; --accent-ink:#1b1400; --accent-soft:#ffefbd; --tab:#23262c; --tab-dash:#9aa0a8;
+  --chord:#a45f00; --easy:#2f8f5b; --med:#c47f00; --hard:#c2410c;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#101114; --surface:#191b1f; --ink:#eceef1; --muted:#9aa1aa; --line:#2c2f35;
+    --accent:#ffc629; --accent-ink:#1b1400; --accent-soft:#3b3115; --tab:#dfe2e6; --tab-dash:#5b616a;
+    --chord:#ffc629; --easy:#4cc486; --med:#f0a82a; --hard:#f07a45;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101114; --surface:#191b1f; --ink:#eceef1; --muted:#9aa1aa; --line:#2c2f35;
+  --accent:#ffc629; --accent-ink:#1b1400; --accent-soft:#3b3115; --tab:#dfe2e6; --tab-dash:#5b616a;
+  --chord:#ffc629; --easy:#4cc486; --med:#f0a82a; --hard:#f07a45;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+header h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,6vw,48px);line-height:1;margin:0;letter-spacing:.01em;text-wrap:balance}
+header h1 span{color:var(--accent);-webkit-text-stroke:0}
+header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.grp{display:flex;align-items:center;gap:8px}
+.grp .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:600 14px/1 var(--body);color:var(--ink);background:transparent;border:0;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg.big button{font-size:16px;padding:10px 16px}
+.pips{display:inline-flex;gap:2px}
+.pips i{width:4px;height:12px;border-radius:1px;background:currentColor;opacity:.25}
+.pips i.on{opacity:1}
+button:focus-visible,.c:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chk{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;cursor:pointer}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.intro{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.intro h2{font:800 22px/1.1 var(--display);margin:0;letter-spacing:.01em}
+.intro p{margin:0;color:var(--muted);max-width:70ch}
+.intro b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card.playing{border-color:var(--accent)}
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 16px 10px}
+.play{flex:none;width:52px;height:52px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;display:grid;place-items:center}
+.play svg{width:22px;height:22px}
+.titles{flex:1 1 220px;min-width:0}
+.titles h3{margin:0;font:800 24px/1.05 var(--display);letter-spacing:.01em}
+.titles .who{color:var(--muted);font-size:14px}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{font:600 12px/1 var(--mono);border:1px solid var(--line);border-radius:5px;padding:5px 7px;color:var(--muted);font-variant-numeric:tabular-nums}
+.loop{font:600 13px/1 var(--body);border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;padding:7px 10px;cursor:pointer}
+.loop[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.tabbox{overflow-x:auto;padding:4px 16px 12px;-webkit-overflow-scrolling:touch}
+pre.tab{margin:0;font:500 15px/1.45 var(--mono);color:var(--tab-dash);white-space:pre;width:max-content}
+pre.tab .chords{color:var(--chord);font-weight:700}
+pre.tab .sn{color:var(--muted)}
+pre.tab .c{cursor:pointer;border-radius:3px}
+pre.tab .c.n{color:var(--tab);font-weight:700}
+pre.tab .c.on{background:var(--accent-soft)}
+pre.tab .c.n.on{background:var(--accent);color:var(--accent-ink)}
+.tips{margin:0;padding:10px 16px 14px 34px;border-top:1px dashed var(--line);color:var(--muted);font-size:15px;display:flex;flex-direction:column;gap:3px}
+.tips li::marker{color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted)}
+.legend code{font:700 14px var(--mono);color:var(--ink)}
+footer{font-size:13px;color:var(--muted)}
+footer a{color:inherit}
+@media (max-width:520px){ .bar{gap:8px 12px} .seg button{padding:8px 10px} pre.tab{font-size:14px} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Em <span>Crossroads</span></h1>
+    <p>Licks and chomps in E minor, in the style of the Crossroads 2026 stage (Austin, Sept 26–27). Press play to hear it, tap any note to hear just that note.</p>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="Practice controls">
+    <div class="seg big" id="cat">
+      <button id="cat-licks" data-v="licks">Licks</button>
+      <button id="cat-chomps" data-v="chomps">Chomps</button>
+    </div>
+    <div class="seg" id="lvl">
+      <button id="lvl-easy" data-v="easy"><span class="pips"><i class="on"></i><i></i><i></i></span>Easy</button>
+      <button id="lvl-medium" data-v="medium"><span class="pips"><i class="on"></i><i class="on"></i><i></i></span>Medium</button>
+      <button id="lvl-hard" data-v="hard"><span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i></span>Hard</button>
+    </div>
+    <div class="grp"><span class="lbl">Speed</span>
+      <div class="seg" id="spd">
+        <button id="spd-50" data-v="0.5">50%</button>
+        <button id="spd-75" data-v="0.75">75%</button>
+        <button id="spd-100" data-v="1">100%</button>
+      </div>
+    </div>
+    <div class="grp"><span class="lbl">Tone</span>
+      <div class="seg" id="tone">
+        <button id="tone-clean" data-v="clean">Clean</button>
+        <button id="tone-drive" data-v="drive">Drive</button>
+      </div>
+    </div>
+    <label class="chk" for="countin"><input type="checkbox" id="countin"> Count-in</label>
+  </div>
+
+  <section class="intro" id="intro"></section>
+  <div id="list" style="display:flex;flex-direction:column;gap:14px"></div>
+
+  <div class="legend" aria-label="How to read the tab">
+    <span><code>15b17</code> bend up to the sound of fret 17</span>
+    <span><code>b..r</code> bend and release</span>
+    <span><code>h</code> hammer-on</span>
+    <span><code>p</code> pull-off</span>
+    <span><code>/ \</code> slide up / down</span>
+    <span><code>~</code> vibrato</span>
+    <span>Stacked numbers = strum them together</span>
+  </div>
+  <footer>The audio is a synthesized guitar, good enough to hear the rhythm and the notes. These licks are written in each player's style; none of them are transcriptions. Lineup: <a href="https://www.guitarworld.com/artists/concerts-gigs-tours/2026-eric-clapton-crossroads-festival-announced" target="_blank" rel="noopener">Guitar World</a>.</footer>
+</div>
+
+<script>
+/* ---------- content ----------
+ Mini tab language: tokens separated by spaces.
+   <string><fret>[b|br|r<semitones>][~]   e.g. B15b2  G14br2  D14~
+   notes joined with + are played together; :<beats> sets duration (sticky)
+   prefix h p / \ = hammer, pull, slide into the note
+   _ rest   | bar line   [Em] chord name over the next note
+*/
+const DATA = {
+  licks: {
+    intro: `<h2>The only shape you need</h2><p>Every lick here lives in the <b>E minor pentatonic box at the 12th fret</b> (plus the open-string version down low). Roots (E) are on the low E string fret 12, D string fret 14 and high e fret 12. Land on those and you always sound resolved.</p>`,
+    easy: [
+      {t:"Warm-up: The Box", who:"Every player on that stage", bpm:84,
+       src:"E12:.5 E15 A12 A14 D12 D14 G12 G14 | B12 B15 e12 e15:1 e12:.5 B15 B12 | G14 G12 D14 D12 A14 A12 E15 E12:1",
+       tips:["Up and down the box. Use one finger per fret: index on 12, ring or pinky on 14/15.","Say \"E\" out loud whenever you hit a root."]},
+      {t:"Slowhand Cry", who:"in the style of Eric Clapton", bpm:66,
+       src:"B15b2:2 e12:1 B15:.5 B12:.5 | G14:1 D14~:3",
+       tips:["Bend the B string at fret 15 until it sounds like fret 17. Push with three fingers.","Hold every note longer than feels comfortable. Space is the lick."]},
+      {t:"Texas Open E", who:"in the style of Jimmie Vaughan & Gary Clark Jr.", bpm:92, swing:true,
+       src:"E0:.5 E3 A0 A1 A2:1 D0:.5 D2 | D0 A2 A1 A0 E3 E0:1.5",
+       tips:["Open strings, shuffle feel: long-short, long-short.","A string fret 1 is the blue note (Bb). Let it rub, then move on."]},
+    ],
+    medium: [
+      {t:"Rolling Triplets", who:"in the style of Joe Bonamassa", bpm:72,
+       src:"e15:1/3 pe12 B15 e15 pe12 B15 e15 pe12 B15 e15 pe12 B15 | B12:.5 G14 D14~:2",
+       tips:["Pick the e15 and the B15 only. The 12 comes from the pull-off.","Loop it slow. Speed comes from repetition, not effort."]},
+      {t:"Blue Note Wobble", who:"in the style of Buddy Guy & Billy Gibbons", bpm:84, swing:true,
+       src:"G12:.5 G14 G15 G14 G12 D14:1.5 | D12:.5 D14 G12 G14b1:1 G12:.5 D14~:2",
+       tips:["G, A, Bb, A, G, then home to E. The Bb (G string fret 15) is the blues.","The half-step bend at the end (14b15) hits the blue note the other way."]},
+      {t:"Unison Bend", who:"in the style of Freddie King via Clapton", bpm:72,
+       src:"G14b2+B12:1 G14b2+B12:1 e12:.5 B15 B12:1 | G14br2:1.5 G12:.5 D14~:2",
+       tips:["Fret B12 with your index and bend G14 up with your ring finger until the two notes sound the same.","That slight rub before they meet is the sound. Don't rush it."]},
+    ],
+    hard: [
+      {t:"The Climb", who:"in the style of Joe Bonamassa", bpm:76,
+       src:"E12:1/4 E15 A12 A13 A14 D12 D14 G12 G14 G15 B12 B15 e12:.5 e15 | B15b2:1 e12~:2",
+       tips:["Sixteenth notes across all six strings, blue notes included (A13, G15).","Practise at 50% until every note is even, then step up."]},
+      {t:"Pedal Flutter", who:"in the style of Derek Trucks & John Mayer", bpm:72,
+       src:"e15:1/4 B12 e14 B12 e12 B12 e14 B12 e15 B12 e17 B12 e15 B12 e14 B12 | B15b2:1 e12:.5 B12 D14~:2",
+       tips:["B12 is the pedal note you keep coming back to. The melody moves on the high e.","Alternate pick strictly: down on e, up on B."]},
+      {t:"Cascade to the Crossroads", who:"in the style of Eric Clapton's closing solos", bpm:78,
+       src:"e15:1/4 e12 B15 B12 e15 e12 B15 B12 G14 G12 D14 D12 G14 G12 D14 D12 | A14 A13 A12 E15 A12:.5 D13 hD14~:2",
+       tips:["Groups of four, falling down the box. A13 is the Bb blue note.","D13 (D#) hammered to D14 (E) is the ending. It pulls you home."]},
+    ],
+  },
+  chomps: {
+    intro: `<h2>What you called chomps</h2><p>The terms are <b>double stops</b> (two notes at once) and <b>triads</b> or <b>partial chords</b> (three notes on the top strings). Chuck Berry built his intros from double stops. Keith Richards plays triads on the top strings instead of full chords. They're lighter and sweeter than a full chord and they fit anywhere on the neck. Chord names are shown above each tab.</p>`,
+    easy: [
+      {t:"Open Em Sparkle", who:"in the style of Keith Richards (acoustic)", bpm:80,
+       src:"[Em] G0+B0+e0:1 G0+B0+e0:1 [Am] G2+B1+e0:1 G2+B1+e0:1 | [B] G4+B4+e2:1 G4+B4+e2:1 [Em] G0+B0+e0:2",
+       tips:["Strum only the top three strings.","Em is all open, Am is two fingers, and B is a small shape at fret 2 to 4."]},
+      {t:"Chuck Berry Chomp", who:"in the style of Chuck Berry", bpm:120,
+       src:"[Em] B12+e12:.5 B12+e12 B12+e12 B12+e12 B15+e15 B15+e15 B12+e12:1 | B12+e12:.5 B12+e12 B15+e15 B15+e15 B12+e12:.5 G14:.5 D14~:1",
+       tips:["Barre B and e with one finger, at fret 12 and then fret 15.","Short downstrokes. Let your wrist bounce."]},
+      {t:"Keef Flick", who:"in the style of Keith Richards", bpm:96, swing:true,
+       src:"[Em] G12+B12+e12:1 [C] hB13:.5 pB12:.5 [Em] G12+B12+e12:1 [C] hB13:.5 pB12:.5 | [Am] G14+B13+e12:1.5 G14+B13+e12:.5 [Em] G12+B12+e12:2",
+       tips:["Barre the 12th fret. A single hammer on the B string (12 to 13) turns Em into C.","That one-finger move is the whole Keith trick."]},
+    ],
+    medium: [
+      {t:"Em All Over the Neck", who:"triad map", bpm:70,
+       src:"[Em] G0+B0+e0:1 G4+B5+e3:1 G9+B8+e7:1 G12+B12+e12:1 | G16+B17+e15:2 G12+B12+e12:2",
+       tips:["Five places to play the same Em chord on the top three strings.","Learn the 7-9 and 12 shapes first. They connect to the lick box."]},
+      {t:"Em, Am, B at the 7th", who:"in the style of Keith Richards", bpm:80,
+       src:"[Em] G9+B8+e7:1 G9+B8+e7:.5 G9+B8+e7:.5 [Am] G9+B10+e8:1 G9+B10+e8:1 | [B] G8+B7+e7:1 G8+B7+e7:1 [Em] G9+B8+e7:2",
+       tips:["A whole minor blues without moving your hand more than one fret.","Use it in place of the full chords over a 12-bar blues in Em."]},
+      {t:"Johnny B. Minor", who:"in the style of Chuck Berry", bpm:132, swing:true,
+       src:"[Em] G14b2+B15+e15:.5 G14b2+B15+e15 G14b2+B15+e15 G14b2+B15+e15 | B12+e12 B12+e12 B12+e12 B12+e12 | B15:.5 B12 G14 G12 D14~:2",
+       tips:["Bend the G string while your pinky holds B15 and e15. That is the Chuck Berry scream.","Then drop to the 12th-fret double stop and walk down to E."]},
+    ],
+    hard: [
+      {t:"Sixths Slide", who:"in the style of John Mayer", bpm:72,
+       src:"[Em] G9+e8:1 /G11+e10:.5 /G12+e12:1.5 | G14+e14:.5 G12+e12:.5 \\G11+e10:.5 \\G9+e8:1.5",
+       tips:["G string plus high e, skipping the B string. Mute it with the underside of your finger.","Pick with thumb and middle finger for the soul sound."]},
+      {t:"Walkdown i-VII-VI-V", who:"triads, the Crossroads ending move", bpm:76,
+       src:"[Em] G12+B12+e12:1.5 G12+B12+e12:.5 [D] G11+B10+e10:1.5 G11+B10+e10:.5 | [C] G9+B8+e8:1.5 G9+B8+e8:.5 [B] G8+B7+e7:1.5 G8+B7+e7:.5 | [Em] G12+B12+e12:4",
+       tips:["Em, D, C, B: the most dramatic minor move in rock.","The B chord has D# in it (G string fret 8), which pulls you back to Em."]},
+      {t:"Stonesy Stabs", who:"in the style of Keith Richards", bpm:108, swing:true,
+       src:"[Em] G12+B12+e12:.5 _:.5 G12+B12+e12:.5 hB13:.5 pB12:.5 _:.5 [D] G11+B10+e10:.5 G11+B10+e10:.5 | [Am] G14+B13+e12:.5 _:.5 G14+B13+e12:.5 _:.5 [Em] G12+B12+e12:1 _:.5 G12+B12+e12:.5",
+       tips:["The gaps are part of the groove. Mute by relaxing your fretting hand.","Stab, rest, stab with a hammer. Play it behind the beat."]},
+    ],
+  },
+};
+
+/* ---------- parser + tab renderer ---------- */
+const SMAP={e:1,B:2,G:3,D:4,A:5,E:6}, SNAME={1:"e",2:"B",3:"G",4:"D",5:"A",6:"E"};
+const OPEN={1:64,2:59,3:55,4:50,5:45,6:40};
+function dur(s){ if(s.includes("/")){const [a,b]=s.split("/");return a/b;} return parseFloat(s); }
+function parseNote(t){
+  const m=t.match(/^([eBGDAE])(\d+)(br|b|r)?(\d)?(~)?$/);
+  if(!m) throw new Error("Bad note "+t);
+  return {s:SMAP[m[1]], f:+m[2], tech:m[3]||null, amt:m[4]?+m[4]:(m[3]?2:0), vib:!!m[5]};
+}
+function parse(src){
+  const out=[]; let d=0.5, label=null;
+  for(let tok of src.trim().split(/\s+/)){
+    if(tok==="|"){out.push({bar:true});continue;}
+    if(tok[0]==="["){label=tok.slice(1,-1);continue;}
+    let leg=null; if(/^[hp\/\\]/.test(tok)){leg=tok[0];tok=tok.slice(1);}
+    const [np,ds]=tok.split(":"); if(ds) d=dur(ds);
+    if(np==="_"){out.push({rest:true,d,n:[]});continue;}
+    out.push({n:np.split("+").map(parseNote), d, leg, c:label}); label=null;
+  }
+  return out;
+}
+function noteText(n,leg){
+  let t=""+n.f;
+  if(n.tech==="b") t=`${n.f}b${n.f+n.amt}`;
+  else if(n.tech==="br") t=`${n.f}b${n.f+n.amt}r${n.f}`;
+  else if(n.tech==="r") t=`${n.f+n.amt}r${n.f}`;
+  if(leg) t=leg+t; if(n.vib) t+="~";
+  return t;
+}
+function renderTab(ev){
+  const L={1:"",2:"",3:"",4:"",5:"",6:""}; let col=0, prevD=null; const labels=[];
+  ev.forEach((e,i)=>{
+    if(e.bar){ for(let s=1;s<=6;s++) L[s]+="-|"; col+=2; prevD=null; return; }
+    const sep=e.leg?0:(prevD==null?2:prevD>=2?5:prevD>=1?4:prevD>=0.5?3:2);
+    const tx={}; e.n.forEach(n=>tx[n.s]=noteText(n,e.leg));
+    const w=Math.max(1,...Object.values(tx).map(t=>t.length));
+    if(e.c) labels.push([col+sep,e.c]);
+    for(let s=1;s<=6;s++){
+      const t=tx[s]||""; const cell=t+"-".repeat(w-t.length);
+      L[s]+="-".repeat(sep)+`<span class="c${t?" n":""}" data-i="${i}">${cell}</span>`;
+    }
+    col+=sep+w; prevD=e.d;
+  });
+  const tail="-".repeat(prevD>=1?4:3)+"|";
+  let html="";
+  if(labels.length){
+    const buf=Array(col+12).fill(" "); let last=-1;
+    labels.forEach(([p,t])=>{ p=Math.max(p,last+1); for(let k=0;k<t.length;k++) buf[p+k]=t[k]; last=p+t.length; });
+    html+=`<span class="chords">  ${buf.join("").trimEnd()}</span>\n`;
+  }
+  for(let s=1;s<=6;s++) html+=`<span class="sn">${SNAME[s]}|</span>${L[s]}${tail}\n`;
+  return html;
+}
+
+/* ---------- audio: Karplus-Strong plucked string ---------- */
+let ctx=null, bus, cleanG, driveG;
+const bufCache=new Map(); const active=new Set();
+function ensureAudio(){
+  if(ctx) { if(ctx.state==="suspended") ctx.resume(); return; }
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  bus=ctx.createGain();
+  const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=4200; lp.Q.value=0.6;
+  const comp=ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
+  const out=ctx.createGain(); out.gain.value=0.9;
+  cleanG=ctx.createGain(); driveG=ctx.createGain();
+  const pre=ctx.createGain(); pre.gain.value=3.2;
+  const shaper=ctx.createWaveShaper(); const curve=new Float32Array(2048);
+  for(let i=0;i<2048;i++){const x=i/1023.5-1; curve[i]=Math.tanh(3*x)/Math.tanh(3);} shaper.curve=curve; shaper.oversample="4x";
+  const post=ctx.createGain(); post.gain.value=0.42;
+  bus.connect(cleanG).connect(lp);
+  bus.connect(pre).connect(shaper).connect(post).connect(driveG).connect(lp);
+  lp.connect(comp).connect(out).connect(ctx.destination);
+  applyTone();
+}
+function applyTone(){ if(!ctx) return; const d=state.tone==="drive"; cleanG.gain.value=d?0:1; driveG.gain.value=d?1:0; }
+function ks(midi){
+  if(bufCache.has(midi)) return bufCache.get(midi);
+  const sr=ctx.sampleRate, f=440*Math.pow(2,(midi-69)/12), N=Math.max(2,Math.round(sr/f));
+  const len=Math.floor(sr*3.2), d=new Float32Array(len);
+  let last=0, mean=0;
+  for(let i=0;i<N;i++){ const r=Math.random()*2-1; last+=0.55*(r-last); d[i]=last; mean+=last; }
+  mean/=N; for(let i=0;i<N;i++) d[i]=(d[i]-mean)*0.9;
+  const loss=Math.pow(0.001,1/(3.2*f));
+  for(let i=N;i<len;i++) d[i]=loss*0.5*(d[i-N]+d[i-N+1]);
+  const buf=ctx.createBuffer(1,len,sr); buf.copyToChannel(d,0);
+  const v={buf, rate:f*(N-0.5)/sr}; bufCache.set(midi,v); return v;
+}
+function playNote(n,t,end,leg,slideFrom,count,ds){
+  const {buf,rate}=ks(OPEN[n.s]+n.f);
+  const src=ctx.createBufferSource(); src.buffer=buf; const pr=src.playbackRate;
+  const up=rate*Math.pow(2,n.amt/12);
+  if(slideFrom!=null){ pr.setValueAtTime(rate*Math.pow(2,(slideFrom-n.f)/12),t); pr.exponentialRampToValueAtTime(rate,t+Math.min(0.09,ds*0.6)); }
+  else if(n.tech==="b"){ pr.setValueAtTime(rate,t); pr.setValueAtTime(rate,t+Math.min(0.06,ds*0.2)); pr.exponentialRampToValueAtTime(up,t+Math.min(0.26,ds*0.55)); }
+  else if(n.tech==="br"){ pr.setValueAtTime(rate,t); pr.setValueAtTime(rate,t+Math.min(0.06,ds*0.15)); pr.exponentialRampToValueAtTime(up,t+ds*0.35); pr.setValueAtTime(up,t+ds*0.6); pr.exponentialRampToValueAtTime(rate,t+ds*0.9); }
+  else if(n.tech==="r"){ pr.setValueAtTime(up,t); pr.setValueAtTime(up,t+ds*0.3); pr.exponentialRampToValueAtTime(rate,t+ds*0.7); }
+  else pr.setValueAtTime(rate,t);
+  let osc=null;
+  if(n.vib){
+    osc=ctx.createOscillator(); osc.frequency.value=5.2; const og=ctx.createGain();
+    const base=n.tech==="b"?up:rate; og.gain.setValueAtTime(0,t); og.gain.setValueAtTime(0,t+0.15); og.gain.linearRampToValueAtTime(base*0.018,t+0.6);
+    osc.connect(og).connect(pr); osc.start(t); osc.stop(end+0.1);
+  }
+  const vel=leg?0.5:count>2?0.5:count>1?0.6:0.8;
+  const g=ctx.createGain(); g.gain.setValueAtTime(vel,t); g.gain.setValueAtTime(vel,end); g.gain.linearRampToValueAtTime(0.0001,end+0.05);
+  src.connect(g).connect(bus); src.start(t); src.stop(end+0.06);
+  const rec={src,g,osc}; active.add(rec); src.onended=()=>active.delete(rec);
+}
+function swingPos(p){ const f=Math.floor(p), r=p-f; return f+(r<0.5?r*4/3:2/3+(r-0.5)*2/3); }
+function schedule(ev,swing,t0,spb){
+  let pos=0; const P=ev.map(e=>{ if(e.bar) return null; const p=pos; pos+=e.d; return p; });
+  const T=p=>(swing?swingPos(p):p)*spb+t0;
+  const starts=P.map(p=>p==null?null:T(p)); const endT=T(pos);
+  ev.forEach((e,i)=>{
+    if(!e.n||!e.n.length) return;
+    const ds=e.d*spb;
+    [...e.n].sort((a,b)=>b.s-a.s).forEach((n,k)=>{
+      let end=null;
+      for(let j=i+1;j<ev.length;j++){ const x=ev[j]; if(x.bar) continue; if(x.rest||x.n.some(m=>m.s===n.s)){ end=starts[j]; break; } }
+      if(end==null) end=endT+1.2;
+      end=Math.min(end,starts[i]+3);
+      let from=null;
+      if(e.leg==="/"||e.leg==="\\"){ for(let j=i-1;j>=0;j--){ const x=ev[j]; const m=x.n&&x.n.find(q=>q.s===n.s); if(m){from=m.f;break;} } }
+      const strum=e.n.length>2?k*0.016:e.n.length>1?k*0.008:0;
+      playNote(n,starts[i]+strum,end,e.leg,from,e.n.length,ds);
+    });
+  });
+  return {starts, len:endT-t0};
+}
+function click(t,accent){
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.type="square"; o.frequency.value=accent?1760:1320;
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t+0.06);
+}
+
+/* ---------- player ---------- */
+let cur=null;
+const ICON_PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>';
+const ICON_STOP='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>';
+function clearHL(card){ card.querySelectorAll(".c.on").forEach(x=>x.classList.remove("on")); }
+function resetUI(){
+  if(!cur) return; const {card}=cur;
+  clearTimeout(cur.timer); cancelAnimationFrame(cur.raf); clearHL(card);
+  card.classList.remove("playing"); const b=card.querySelector(".play"); b.innerHTML=ICON_PLAY; b.setAttribute("aria-label","Play");
+  cur=null;
+}
+function stop(){
+  if(ctx){ const t=ctx.currentTime; active.forEach(r=>{ try{ r.g.gain.cancelScheduledValues(t); r.g.gain.setValueAtTime(r.g.gain.value,t); r.g.gain.linearRampToValueAtTime(0.0001,t+0.04); r.src.stop(t+0.05); if(r.osc) r.osc.stop(t+0.05);}catch(e){} }); active.clear(); }
+  resetUI();
+}
+function play(item,card){
+  ensureAudio(); stop();
+  const spb=60/(item.bpm*state.speed);
+  let t=ctx.currentTime+0.08;
+  if(state.countin){ for(let k=0;k<4;k++) click(t+k*spb,k===0); t+=4*spb; }
+  const me={card,passes:[],timer:0,raf:0}; cur=me;
+  card.classList.add("playing"); const b=card.querySelector(".play"); b.innerHTML=ICON_STOP; b.setAttribute("aria-label","Stop");
+  const pass=t0=>{
+    const s=schedule(item.ev,item.swing,t0,spb); me.passes.push({t0,...s});
+    if(me.passes.length>2) me.passes.shift();
+    me.timer=setTimeout(()=>{
+      if(cur!==me) return;
+      if(card.querySelector(".loop").getAttribute("aria-pressed")==="true") pass(t0+s.len);
+      else me.timer=setTimeout(()=>{ if(cur===me) resetUI(); },450);
+    },Math.max(0,(t0+s.len-ctx.currentTime-0.3)*1000));
+  };
+  pass(t);
+  const cells=[...card.querySelectorAll(".c")];
+  let lastI=-2;
+  const tick=()=>{
+    if(cur!==me) return;
+    const now=ctx.currentTime; let i=-1;
+    const p=[...me.passes].reverse().find(p=>p.t0<=now);
+    if(p){ p.starts.forEach((st,k)=>{ if(st!=null&&st<=now) i=k; }); }
+    if(i!==lastI){ cells.forEach(c=>c.classList.toggle("on",+c.dataset.i===i)); lastI=i; }
+    me.raf=requestAnimationFrame(tick);
+  };
+  me.raf=requestAnimationFrame(tick);
+}
+function playOne(item,i){
+  ensureAudio(); if(cur) stop();
+  const e=item.ev[i]; if(!e||!e.n||!e.n.length) return;
+  schedule([{...e,leg:null,d:Math.max(e.d,1)}],false,ctx.currentTime+0.02,60/item.bpm);
+}
+
+/* ---------- UI ---------- */
+const state={cat:"licks",lvl:"easy",speed:1,tone:"clean",countin:false};
+try{ Object.assign(state,JSON.parse(localStorage.getItem("emxr")||"{}")); }catch(e){}
+function save(){ try{ localStorage.setItem("emxr",JSON.stringify(state)); }catch(e){} }
+function syncSeg(id,val){ document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(val)))); }
+function esc(s){ return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function render(){
+  stop();
+  syncSeg("cat",state.cat); syncSeg("lvl",state.lvl); syncSeg("spd",state.speed); syncSeg("tone",state.tone);
+  document.getElementById("countin").checked=!!state.countin;
+  const group=DATA[state.cat];
+  document.getElementById("intro").innerHTML=group.intro;
+  const list=document.getElementById("list"); list.innerHTML="";
+  group[state.lvl].forEach((item,idx)=>{
+    item.ev=item.ev||parse(item.src);
+    const card=document.createElement("article"); card.className="card";
+    card.innerHTML=`
+      <div class="head">
+        <button class="play" id="play-${state.cat}-${state.lvl}-${idx}" aria-label="Play">${ICON_PLAY}</button>
+        <div class="titles"><h3>${esc(item.t)}</h3><div class="who">${esc(item.who)}</div></div>
+        <div class="meta">
+          <span class="tag">${item.bpm} BPM${item.swing?" · swing":""}</span>
+          <button class="loop" id="loop-${state.cat}-${state.lvl}-${idx}" aria-pressed="false">Loop</button>
+        </div>
+      </div>
+      <div class="tabbox"><pre class="tab">${renderTab(item.ev)}</pre></div>
+      <ul class="tips">${item.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`;
+    card.querySelector(".play").onclick=()=>{ if(cur&&cur.card===card) stop(); else play(item,card); };
+    const lb=card.querySelector(".loop"); lb.onclick=()=>lb.setAttribute("aria-pressed",String(lb.getAttribute("aria-pressed")!=="true"));
+    card.querySelector("pre").addEventListener("click",ev=>{ const c=ev.target.closest(".c"); if(c) playOne(item,+c.dataset.i); });
+    list.appendChild(card);
+  });
+}
+function bindSeg(id,key,num){
+  document.getElementById(id).addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    state[key]=num?parseFloat(b.dataset.v):b.dataset.v; save();
+    if(key==="tone"){ applyTone(); syncSeg(id,state[key]); }
+    else if(key==="speed"){ syncSeg(id,state[key]); }
+    else render();
+  });
+}
+bindSeg("cat","cat"); bindSeg("lvl","lvl"); bindSeg("spd","speed",true); bindSeg("tone","tone");
+document.getElementById("countin").onchange=e=>{ state.countin=e.target.checked; save(); };
+render();
+</script>
