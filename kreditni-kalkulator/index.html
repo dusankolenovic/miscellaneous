@@ -1,0 +1,2156 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Kreditni kalkulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#ffffff;--bg1:#f8f8f8;--bg2:#f0f0f0;--bg3:#e8e8e8;--bg4:#ddd;
+  --border:#e0e0e0;--border2:#d0d0d0;
+  --text1:#1a1a1a;--text2:#666;--text3:#999;
+  --safe:#16a34a;--safe-bg:rgba(22,163,74,.07);--safe-border:rgba(22,163,74,.25);
+  --ok:#ca8a04;--ok-bg:rgba(202,138,4,.07);--ok-border:rgba(202,138,4,.25);
+  --stretch:#ea580c;--stretch-bg:rgba(234,88,12,.07);--stretch-border:rgba(234,88,12,.25);
+  --risk:#dc2626;--risk-bg:rgba(220,38,38,.07);--risk-border:rgba(220,38,38,.25);
+  --blue:#2563eb;--blue-bg:rgba(37,99,235,.06);--blue-border:rgba(37,99,235,.2);
+  --accent:#2563eb;
+  --radius:8px;--radius-sm:5px;--radius-lg:12px;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --chat-w:360px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg0);color:var(--text1);display:flex;flex-direction:column}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden}
+.calc-side{flex:1;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)}
+.chat-side{width:var(--chat-w);flex-shrink:0;display:flex;flex-direction:column;background:var(--bg0)}
+
+/* ── CALC WRAPPER ── */
+.calc-inner{padding:1.25rem 1.5rem 2rem}
+.calc-header{margin-bottom:1.25rem}
+.calc-header h1{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.02em;color:var(--text1)}
+.calc-header p{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+
+/* ── TABS ── */
+.tab-row{display:flex;gap:2px;margin-bottom:1.25rem;background:var(--bg2);padding:3px;border-radius:var(--radius);border:1px solid var(--border);width:fit-content}
+.tab-btn{padding:5px 12px;font-size:11px;font-weight:500;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;font-family:var(--mono);letter-spacing:.02em;white-space:nowrap}
+.tab-btn:hover{color:var(--text2);background:var(--bg3)}
+.tab-btn.active{background:var(--bg0);color:var(--text1);box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid var(--border)}
+.panel{display:none}.panel.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.4rem;margin-bottom:10px}
+.section-title{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem .9rem}
+.metric-label{font-size:10px;color:var(--text3);margin-bottom:4px;font-family:var(--mono);letter-spacing:.04em}
+.metric-value{font-size:20px;font-weight:600;letter-spacing:-.4px;font-family:var(--mono)}
+.metric-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;font-family:var(--mono);letter-spacing:.02em}
+.field input{width:100%;padding:7px 10px;font-size:13px;font-family:var(--mono);border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text1);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-bg)}
+.field input.auto-field{color:var(--text3)}
+.row-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;font-family:var(--mono);letter-spacing:.04em}
+.status-safe{background:var(--safe-bg);color:var(--safe);border:1px solid var(--safe-border)}
+.status-ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-border)}
+.status-stretch{background:var(--stretch-bg);color:var(--stretch);border:1px solid var(--stretch-border)}
+.status-risk{background:var(--risk-bg);color:var(--risk);border:1px solid var(--risk-border)}
+.pill{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600;font-family:var(--mono);letter-spacing:.04em}
+.pill-safe{background:var(--safe-bg);color:var(--safe);border:1px solid var(--safe-border)}
+.pill-ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-border)}
+.pill-risk{background:var(--risk-bg);color:var(--risk);border:1px solid var(--risk-border)}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--text2)}
+.info-val{font-weight:500;font-family:var(--mono)}
+.compare-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0;border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;align-items:center}
+.compare-row.header{font-size:10px;color:var(--text3);font-weight:500;letter-spacing:.05em;text-transform:uppercase;font-family:var(--mono)}
+.compare-row:last-child{border-bottom:none}
+.highlight-row{background:var(--blue-bg);border-radius:var(--radius-sm);padding:8px 7px;margin:0 -7px}
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-bottom:12px}
+.slider-row label{font-size:11px;color:var(--text2);white-space:nowrap;min-width:110px;font-weight:500;font-family:var(--mono)}
+.slider-row span{font-size:12px;font-weight:600;min-width:60px;text-align:right;font-family:var(--mono)}
+input[type=range]{-webkit-appearance:none;height:3px;background:var(--bg4);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer;box-shadow:0 0 0 3px var(--blue-bg)}
+.decision-box{border-left:2px solid;padding:.65rem .9rem;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-bottom:6px;font-size:12px;line-height:1.6}
+.decision-safe{border-color:var(--safe);background:var(--safe-bg);color:var(--safe)}
+.decision-stretch{border-color:var(--stretch);background:var(--stretch-bg);color:var(--stretch)}
+.decision-risk{border-color:var(--risk);background:var(--risk-bg);color:var(--risk)}
+#status-banner{padding:.75rem 1.1rem;border-radius:var(--radius);margin-bottom:10px;font-size:12px;font-weight:500;border:1px solid;font-family:var(--mono)}
+.sep{height:1px;background:var(--border);margin:1.1rem 0}
+.note{font-size:11px;color:var(--text2);line-height:1.6}
+
+/* flash highlight when chat updates a field */
+@keyframes fieldFlash{0%{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15);}100%{border-color:var(--border2);box-shadow:none;}}
+.field-updated{animation:fieldFlash 1.2s ease forwards}
+
+/* ── CHAT SIDE ── */
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-header-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text1);letter-spacing:.06em}
+.chat-header-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;letter-spacing:.04em}
+.chat-status{width:7px;height:7px;border-radius:50%;background:var(--safe);flex-shrink:0}
+.chat-status.thinking{background:var(--ok);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.chat-messages{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px}
+.chat-messages::-webkit-scrollbar{width:3px}
+.chat-messages::-webkit-scrollbar-track{background:transparent}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.msg{display:flex;flex-direction:column;gap:3px;max-width:100%}
+.msg-user{align-items:flex-end}
+.msg-assistant{align-items:flex-start}
+.msg-bubble{padding:9px 12px;border-radius:var(--radius);font-size:12px;line-height:1.55;max-width:100%;word-break:break-word}
+.msg-user .msg-bubble{background:var(--blue);border:1px solid var(--blue);color:#fff;border-bottom-right-radius:2px}
+.msg-assistant .msg-bubble{background:var(--bg2);border:1px solid var(--border2);color:var(--text1);border-bottom-left-radius:2px}
+.msg-bubble code{font-family:var(--mono);font-size:11px;background:var(--bg3);padding:1px 5px;border-radius:3px;color:var(--blue)}
+.msg-bubble strong{font-weight:600;color:var(--text1)}
+.msg-meta{font-size:9px;color:var(--text3);font-family:var(--mono);padding:0 3px}
+
+/* action pills shown in assistant messages */
+.action-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;font-size:10px;font-family:var(--mono);color:var(--text2);margin:3px 2px 0;cursor:default}
+.action-pill.done{border-color:var(--safe-border);color:var(--safe)}
+
+.chat-suggestions{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;flex-shrink:0}
+.suggestion{padding:4px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:20px;font-size:10px;font-family:var(--mono);color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.suggestion:hover{border-color:var(--blue-border);color:var(--blue);background:var(--blue-bg)}
+
+.chat-input-row{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:7px;align-items:flex-end;flex-shrink:0}
+.chat-input-row textarea{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text1);font-family:var(--sans);font-size:12px;padding:8px 10px;resize:none;outline:none;min-height:36px;max-height:100px;transition:border-color .15s;line-height:1.45}
+.chat-input-row textarea:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-bg)}
+.chat-input-row textarea::placeholder{color:var(--text3)}
+.send-btn{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s;margin-bottom:2px}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.3;cursor:not-allowed}
+.send-btn svg{width:14px;height:14px;fill:#fff}
+
+
+
+
+
+
+
+/* ══ NOVI IZGLED ══
+   Layout: kalkulator levo na svetloj podlozi sa belim karticama, asistent desno; na telefonu jedno ispod drugog.
+   Jedan font (Geist) sa tabelarnim ciframa, jedna akcentna boja (kobalt), zaobljenja 14 / 10 / pun krug. */
+:root{
+  --page:#f2f4f7; --bg0:#ffffff; --bg1:#ffffff; --bg2:#f5f6f9; --bg3:#eceef3; --bg4:#dde1e8;
+  --border:#e4e7ec; --border2:#d3d8e0;
+  --text1:#141a26; --text2:#4f5868; --text3:#7d8595;
+  --accent:#2747c8; --accent-soft:#eaeefc; --accent-line:#c9d3f6;
+  --blue:var(--accent); --blue-bg:var(--accent-soft); --blue-border:var(--accent-line);
+  --safe:#1d7a46; --safe-bg:#e7f4ec; --safe-border:#bfe0cb;
+  --ok:#a26100; --ok-bg:#fbf1dc; --ok-border:#efd7a6;
+  --stretch:#c2410c; --stretch-bg:#fdece3; --stretch-border:#f5c9b1;
+  --risk:#c0262d; --risk-bg:#fbe8e9; --risk-border:#f1c2c5;
+  --shadow:0 1px 2px rgba(20,26,38,.04), 0 4px 16px rgba(20,26,38,.05);
+  --radius:10px; --radius-sm:8px; --radius-lg:14px;
+  --sans:'Geist', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono:'Geist', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --num:'Geist', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --page:#0d1117; --bg0:#141a23; --bg1:#161d27; --bg2:#1c2430; --bg3:#232c3a; --bg4:#2e3848;
+  --border:#263041; --border2:#334055;
+  --text1:#e7ebf2; --text2:#a8b1c0; --text3:#7c8697;
+  --accent:#8aa2ff; --accent-soft:#1d2645; --accent-line:#33427a;
+  --safe:#5fcf8f; --safe-bg:#132a1e; --safe-border:#24533a;
+  --ok:#f0bd5c; --ok-bg:#2d2412; --ok-border:#5a4720;
+  --stretch:#ff9a66; --stretch-bg:#2f1c12; --stretch-border:#5e3420;
+  --risk:#ff7a80; --risk-bg:#311719; --risk-border:#5f2a2e;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark } }
+:root[data-theme="dark"]{
+  --page:#0d1117; --bg0:#141a23; --bg1:#161d27; --bg2:#1c2430; --bg3:#232c3a; --bg4:#2e3848;
+  --border:#263041; --border2:#334055;
+  --text1:#e7ebf2; --text2:#a8b1c0; --text3:#7c8697;
+  --accent:#8aa2ff; --accent-soft:#1d2645; --accent-line:#33427a;
+  --safe:#5fcf8f; --safe-bg:#132a1e; --safe-border:#24533a;
+  --ok:#f0bd5c; --ok-bg:#2d2412; --ok-border:#5a4720;
+  --stretch:#ff9a66; --stretch-bg:#2f1c12; --stretch-border:#5e3420;
+  --risk:#ff7a80; --risk-bg:#311719; --risk-border:#5f2a2e;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark }
+
+body{font-family:var(--sans);font-variant-numeric:tabular-nums;background:var(--page);color:var(--text1);-webkit-font-smoothing:antialiased}
+.calc-side{background:var(--page);border-right:1px solid var(--border)}
+.calc-inner{padding:1.75rem 2rem 3rem;max-width:1040px}
+.calc-header{margin-bottom:1.25rem}
+.calc-header h1{font-family:var(--sans);font-size:24px;font-weight:650;letter-spacing:-.02em;color:var(--text1)}
+.calc-header p{font-family:var(--sans);font-size:14px;color:var(--text2);margin-top:4px}
+
+/* tabovi: segmentirana kontrola */
+.tab-row{background:var(--bg3);border:none;padding:4px;border-radius:999px;gap:2px;flex-wrap:wrap;margin-bottom:1.5rem}
+.tab-btn{font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:0;padding:7px 14px;border-radius:999px;color:var(--text2);border:1px solid transparent}
+.tab-btn:hover{background:transparent;color:var(--text1)}
+.tab-btn.active{background:var(--bg1);color:var(--text1);border-color:var(--border);box-shadow:var(--shadow)}
+
+/* kartice i naslovi sekcija */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.4rem;margin-bottom:12px;box-shadow:var(--shadow)}
+.section-title{font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text1);border-bottom:none;padding-bottom:0;margin-bottom:14px}
+.metric-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;box-shadow:var(--shadow)}
+.metric-label{font-family:var(--sans);font-size:13px;letter-spacing:0;color:var(--text2);text-transform:lowercase}
+.metric-label::first-letter{text-transform:uppercase}
+.metric-value{font-family:var(--sans);font-size:24px;font-weight:650;letter-spacing:-.02em}
+.metric-sub{font-size:12px;color:var(--text3)}
+.field label{font-family:var(--sans);font-size:13px;color:var(--text2);letter-spacing:0;margin-bottom:6px}
+.field input{font-family:var(--sans);font-size:15px;padding:9px 12px;border-radius:var(--radius);background:var(--bg1);border:1px solid var(--border2)}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field input.auto-field{background:var(--bg2);color:var(--text2)}
+.info-row{font-size:14px;padding:8px 0}
+.info-val{font-family:var(--sans);font-weight:600}
+.status-badge,.pill{font-family:var(--sans);letter-spacing:0;font-size:12px;padding:2px 10px}
+.compare-row{font-size:13px}
+.compare-row.header{font-family:var(--sans);font-size:12px;text-transform:none;letter-spacing:0;color:var(--text3)}
+.slider-row label,.slider-row span{font-family:var(--sans);font-size:13px}
+input[type=range]::-webkit-slider-thumb{background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+#status-banner{font-family:var(--sans);font-size:14px;border-radius:var(--radius-lg)}
+.decision-box{font-size:14px;border-radius:0 var(--radius) var(--radius) 0}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* asistent */
+.chat-side{background:var(--bg0)}
+.chat-header{padding:16px 18px}
+.chat-header-title{font-family:var(--sans);font-size:15px;font-weight:600;letter-spacing:0}
+.chat-header-sub{font-family:var(--sans);font-size:12px;letter-spacing:0;color:var(--text3)}
+.msg-bubble{font-size:13.5px;line-height:1.55;border-radius:14px;padding:10px 13px}
+.msg-user .msg-bubble{background:var(--accent);border-color:var(--accent)}
+.msg-assistant .msg-bubble{background:var(--bg2);border-color:var(--border)}
+.msg-meta,.action-pill{font-family:var(--sans)}
+.chat-input-row textarea{font-size:14px;border-radius:12px;background:var(--bg2)}
+.send-btn{background:var(--accent);border-radius:10px;width:36px;height:36px}
+
+/* ══ SCENARIO OTPLATE ══ */
+.sb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.sb-title{font-size:20px;font-weight:650;letter-spacing:-.015em;text-wrap:balance}
+.sb-sub{font-size:14px;color:var(--text2);margin-top:4px;max-width:58ch}
+.sb-save{display:flex;align-items:center;gap:10px}
+.sb-status{font-size:13px;color:var(--text3)}
+.sb-status.is-dirty{color:var(--ok)}
+.sb-btn{font-family:var(--sans);font-size:13px;font-weight:550;padding:8px 14px;border-radius:999px;border:1px solid var(--border2);background:var(--bg1);color:var(--text1);cursor:pointer;transition:transform .15s cubic-bezier(.16,1,.3,1),border-color .15s}
+.sb-btn:hover{border-color:var(--accent)}
+.sb-btn:active{transform:scale(.98)}
+.sb-btn:disabled{opacity:.45;cursor:not-allowed}
+.sb-btn-primary{background:var(--accent);border-color:var(--accent);color:var(--bg1)}
+.sb-baseline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.sb-chip{font-size:13px;color:var(--text2);background:var(--bg1);border:1px solid var(--border);border-radius:999px;padding:6px 12px}
+.sb-chip b{color:var(--text1);font-weight:600;margin-left:4px}
+.sb-start{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-right:6px}
+.sb-start input,.sb-answer-q input,.sb-fields input{font-family:var(--sans);font-size:14px;color:var(--text1);background:var(--bg1);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;min-width:0;outline:none}
+.sb-start input:focus,.sb-answer-q input:focus,.sb-fields input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sb-answer{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:1.4rem 1.5rem;margin-bottom:12px}
+.sb-answer-q{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sb-answer-q label{font-size:14px;color:var(--text2)}
+.sb-answer-num{font-size:44px;font-weight:650;letter-spacing:-.035em;line-height:1.1;margin:12px 0 10px}
+.sb-answer-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px;color:var(--text2)}
+.sb-answer-meta b{color:var(--text1);font-weight:600}
+.sb-good,.sb-good b{color:var(--safe)!important}
+.sb-timeline{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:1rem 1.25rem;margin-bottom:12px}
+.sb-tl-labels{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.sb-tl-labels b{color:var(--text1)}
+.sb-tl-bar{position:relative;height:14px;border-radius:999px;background:var(--bg3);overflow:hidden}
+.sb-tl-seg{position:absolute;top:0;bottom:0;opacity:.85}
+.sb-tl-mark{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:var(--text1);border-radius:2px}
+.sb-tl-asof{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--risk)}
+.sb-tl-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text3);margin-top:10px}
+.sb-tl-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.lg-phase{background:var(--accent)} .lg-lump{background:var(--text1)} .lg-asof{background:var(--risk)}
+.sb-block{margin:22px 0 10px}
+.sb-block-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.sb-block-head h3{font-size:16px;font-weight:600}
+.sb-block-head p{font-size:13px;color:var(--text3);margin-top:2px}
+.sb-list{display:flex;flex-direction:column;gap:10px}
+.sb-row{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:1rem 1.1rem;position:relative;overflow:hidden}
+.sb-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--row-c,var(--text1))}
+.sb-row-lump{--row-c:var(--text1)}
+.sb-fields{display:grid;gap:12px}
+.sb-fields-phase{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,1fr)}
+.sb-fields-lump{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
+.sb-fields label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text2)}
+.sb-fields input{width:100%}
+.sb-row-foot{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--text2)}
+.sb-range{color:var(--text3)}
+.sb-outcome b{color:var(--text1);font-weight:600}
+.sb-toggle{display:inline-flex;background:var(--bg3);border-radius:999px;padding:3px}
+.sb-toggle button{font-family:var(--sans);font-size:12px;font-weight:500;border:none;background:transparent;color:var(--text2);padding:5px 11px;border-radius:999px;cursor:pointer}
+.sb-toggle button.on{background:var(--bg1);color:var(--text1);box-shadow:var(--shadow)}
+.sb-remove{margin-left:auto;font-family:var(--sans);font-size:12px;border:none;background:transparent;color:var(--text3);cursor:pointer;padding:4px 6px;border-radius:6px}
+.sb-remove:hover{color:var(--risk);background:var(--risk-bg)}
+.sb-empty{border:1px dashed var(--border2);border-radius:var(--radius-lg);padding:1.25rem;font-size:14px;color:var(--text3);text-align:center}
+.sb-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0 12px}
+.sb-metrics>div{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:4px}
+.sb-metrics span{font-size:13px;color:var(--text2)}
+.sb-metrics b{font-size:22px;font-weight:650;letter-spacing:-.02em}
+.sb-metrics small{font-size:12px;color:var(--text3)}
+.sb-table-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow-x:auto}
+.sb-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.sb-table th{font-size:12px;font-weight:500;color:var(--text3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+.sb-table td{padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+.sb-table tr:last-child td{border-bottom:none}
+.sb-table .n{text-align:right}
+.sb-table .muted{color:var(--text3)}
+.sb-table b{font-weight:600}
+.sb-table tr.has-lump td{background:var(--bg2)}
+.sb-table tr.is-asof td{background:var(--accent-soft)}
+.sb-note{font-size:12px;color:var(--text3);margin-top:8px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ══ TELEFON / USKI EKRAN ══ */
+@media (max-width:900px){
+  html,body{height:auto;overflow:auto}
+  .app{flex-direction:column;height:auto;overflow:visible}
+  .calc-side{overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
+  .chat-side{width:100%;height:80vh}
+  .calc-inner{padding-block:1.25rem 2rem;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+  .grid4,.sb-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+  .sb-fields-phase{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sb-fields-lump{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sb-fields-lump label:first-child,.sb-fields-phase label:first-child{grid-column:1/-1}
+  .sb-answer-num{font-size:36px}
+}
+@media (max-width:520px){
+  .grid2,.row-fields{grid-template-columns:minmax(0,1fr)}
+  .compare-row{font-size:12px}
+}
+.msg-user .msg-bubble{color:var(--bg1)}
+.send-btn svg{fill:var(--bg1)}
+
+/* ══ DO KREDITA ══ */
+.sb-part{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:650;letter-spacing:-.01em;margin:34px 0 4px}
+.sb-part span{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600}
+.sb-part-sub{font-size:13px;color:var(--text3);margin:0 0 4px 36px;max-width:68ch}
+#sc-pre-inputs{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:1.1rem 1.2rem;margin-top:14px}
+.sb-fields-pre{grid-template-columns:repeat(4,minmax(0,1fr))}
+.sb-fields-ev{grid-template-columns:repeat(4,minmax(0,1fr))}
+.sb-fields .span2{grid-column:span 2}
+.sb-fields select{width:100%;font-family:var(--sans);font-size:14px;color:var(--text1);background:var(--bg1);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 10px;min-width:0;outline:none}
+.sb-fields select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sb-fields input:disabled,.sb-fields select:disabled{opacity:.45;cursor:not-allowed}
+.sb-rule{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:14px;color:var(--text2)}
+.sb-rule input{width:64px;font-family:var(--num);font-size:14px;text-align:right;color:var(--text1);background:var(--bg1);border:1px solid var(--border2);border-radius:var(--radius);padding:6px 8px;outline:none}
+.sb-rule input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.sb-warn{background:var(--ok-bg);border:1px solid var(--ok-border);color:var(--text1);border-radius:var(--radius);padding:.7rem 1rem;font-size:13.5px;margin:0 0 12px}
+.sb-neg{color:var(--risk)}
+.sb-pos{color:var(--safe)}
+.sb-chip-note{font-size:12px;color:var(--text3);align-self:center}
+.sb-tl-pre{background:repeating-linear-gradient(135deg,var(--safe) 0 4px,color-mix(in srgb,var(--safe) 70%,transparent) 4px 8px)}
+.lg-pre{background:var(--safe)}
+.sb-tl-credit{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--bg1)}
+.sb-table td:nth-child(3){white-space:normal;min-width:150px}
+#sc-results .sb-table td:nth-child(3){white-space:nowrap;min-width:0}
+@media (max-width:900px){
+  .sb-fields-pre,.sb-fields-ev{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sb-part-sub{margin-left:0}
+}
+@media (max-width:520px){
+  .sb-fields-pre{grid-template-columns:minmax(0,1fr)}
+  .sb-fields-ev .span2{grid-column:1/-1}
+}
+
+.sb-calc{display:flex;flex-direction:column;gap:4px;justify-content:center;background:var(--bg2);border-radius:var(--radius);padding:8px 12px;grid-column:span 2}
+.sb-calc span{font-size:12px;color:var(--text2)}
+.sb-calc b{font-size:18px;font-weight:650;font-family:var(--num);letter-spacing:-.01em}
+.sb-calc small{font-size:12px;color:var(--text3)}
+.sb-fields input.auto-field{background:var(--bg2);color:var(--text2)}
+@media (max-width:520px){ .sb-calc{grid-column:auto} }
+
+.sb-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.sb-cmp{border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:13px;color:var(--text2);line-height:1.5}
+.sb-cmp span{display:block;font-size:12px;font-weight:600;color:var(--text3)}
+.sb-cmp b{color:var(--text1);font-weight:600}
+.sb-cmp.is-on{border-color:var(--accent-line);background:var(--accent-soft)}
+.sb-cmp.is-on span{color:var(--accent)}
+@media (max-width:520px){ .sb-compare{grid-template-columns:minmax(0,1fr)} }
+
+/* ══ DNEVNIK ══
+   Mirno: jedna boja akcenta, bez traka i bedževa, dosta vazduha. */
+.lg-list{margin-top:8px;max-width:920px}
+.lg-sec{margin-top:28px}
+.lg-sec header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin-bottom:10px}
+.lg-sec h3{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.lg-sec header p{font-size:14px;color:var(--text2)}
+.lg-table{width:100%;border-collapse:collapse;font-size:15px;background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.lg-table th{font-size:13px;font-weight:500;color:var(--text2);text-align:left;padding:12px 20px;border-bottom:1px solid var(--border)}
+.lg-table td{padding:16px 20px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.45;color:var(--text1)}
+.lg-table tr:last-child td{border-bottom:none}
+.lg-table .n{text-align:right;white-space:nowrap}
+.lg-when{white-space:nowrap;width:150px;font-weight:500}
+.lg-what span{display:block}
+.lg-what span+span{margin-top:2px}
+.lg-plain{color:var(--text2)}
+.lg-key{font-weight:600}
+.lg-over{color:var(--accent)}
+.lg-dim{color:var(--text2)}
+.lg-table tr.is-key .lg-when::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin:0 9px 2px -16px;vertical-align:middle}
+.lg-table tr.is-run td{color:var(--text2)}
+.lg-table tr.is-asof td{background:var(--accent-soft)}
+.lg-pre .n{width:160px}
+.lg-loan td.n:nth-child(3),.lg-loan td.n:nth-child(4){width:120px}
+.lg-loan td.n:nth-child(5){width:130px}
+.lg-milestone{display:grid;grid-template-columns:150px minmax(0,1fr);gap:2px 20px;margin-top:28px;padding:18px 20px;border:1px solid var(--accent-line);border-radius:var(--radius-lg);background:var(--accent-soft)}
+.lg-milestone span{grid-row:span 2;font-weight:500}
+.lg-milestone b{font-weight:600;font-size:15px}
+.lg-milestone em{font-style:normal;color:var(--text2);font-size:14px}
+@media (max-width:760px){
+  .lg-table thead{display:none}
+  .lg-table,.lg-table tbody{display:block}
+  .lg-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .lg-table tr:last-child{border-bottom:none}
+  .lg-table td{display:block;padding:0;border:none;width:auto!important}
+  .lg-when{grid-column:1;grid-row:1}
+  .lg-table td.n:nth-child(3){grid-column:2;grid-row:1;font-weight:500}
+  .lg-what{grid-column:1/-1;grid-row:2}
+  .lg-loan td.n:nth-child(4),.lg-loan td.n:nth-child(5){grid-row:3;text-align:left;font-size:13px;color:var(--text2)}
+  .lg-loan td.n:nth-child(4)::before{content:"Rata "}
+  .lg-loan td.n:nth-child(5){text-align:right}
+  .lg-loan td.n:nth-child(5)::before{content:"Dug "}
+  .lg-table tr.is-key .lg-when::before{margin-left:0}
+  .lg-milestone{grid-template-columns:minmax(0,1fr)}
+  .lg-milestone span{grid-row:auto}
+}
+</style>
+
+<div class="app">
+
+<!-- ══ KALKULATOR ══ -->
+<div class="calc-side">
+<div class="calc-inner">
+<div class="calc-header">
+  <h1>Kreditni kalkulator</h1>
+  <p>Rata, prevremena otplata i scenario otplate za stan.</p>
+</div>
+
+<div class="tab-row" id="tabRow"></div>
+
+<!-- PARAMETRI -->
+<div id="tab-parametri" class="panel active">
+<div class="card">
+  <div class="section-title">Nekretnina i kredit</div>
+  <div class="row-fields">
+    <div class="field"><label>Vrednost stana (€)</label><input id="p-cena" value="200000"></div>
+    <div class="field"><label>Učešće (€)</label><input id="p-ucesce" value="40000"></div>
+  </div>
+  <div class="row-fields">
+    <div class="field"><label>Iznos kredita (€)</label><input id="p-kredit" value="160000" class="auto-field" readonly></div>
+    <div class="field"><label>Kamatna stopa (%)</label><input id="p-kamata" value="4.5"></div>
+  </div>
+  <div class="row-fields">
+    <div class="field"><label>Period isplate (god)</label><input id="p-rok" value="15"></div>
+    <div class="field"><label>Mesečna rata (€)</label><input id="p-rata-input" class="auto-field" readonly></div>
+  </div>
+</div>
+<div class="card">
+  <div class="section-title">Prihodi i rashodi</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:5px">
+    <div style="font-size:9px;color:var(--text3);text-align:center;font-weight:600;letter-spacing:.07em;font-family:var(--mono)">TRENUTNI</div>
+    <div style="font-size:9px;color:var(--text3);text-align:center;font-weight:600;letter-spacing:.07em;font-family:var(--mono)">PESIMISTIČKI</div>
+    <div style="font-size:9px;color:var(--text3);text-align:center;font-weight:600;letter-spacing:.07em;font-family:var(--mono)">REALNI</div>
+    <div style="font-size:9px;color:var(--text3);text-align:center;font-weight:600;letter-spacing:.07em;font-family:var(--mono)">OPTIMISTIČKI</div>
+  </div>
+  <div class="field" style="margin-top:6px"><label>Mesečni prihodi (€)</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+      <input id="p-prihod-cur" value="2800" style="padding:6px 8px;font-size:12px">
+      <input id="p-prihod-neg" value="2200" style="padding:6px 8px;font-size:12px">
+      <input id="p-prihod" value="3000" style="padding:6px 8px;font-size:12px">
+      <input id="p-prihod-pos" value="3800" style="padding:6px 8px;font-size:12px">
+    </div>
+  </div>
+  <div class="field"><label>Rashodi (€)</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+      <input id="p-rashodi-cur" value="1200" style="padding:6px 8px;font-size:12px">
+      <input id="p-rashodi-neg" value="1200" style="padding:6px 8px;font-size:12px">
+      <input id="p-rashodi" value="1200" style="padding:6px 8px;font-size:12px">
+      <input id="p-rashodi-por" value="1600" style="padding:6px 8px;font-size:12px">
+    </div>
+  </div>
+  <div class="field" style="margin-bottom:0"><label>Prihod žene (€)</label><input id="p-zena" value="0" style="max-width:180px"></div>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="panel">
+<div id="status-banner" style="display:none"></div>
+<div class="grid4" style="margin-bottom:10px">
+  <div class="metric-card"><div class="metric-label">RATA</div><div class="metric-value" id="d-rata">-</div><div class="metric-sub">€ / mesec</div></div>
+  <div class="metric-card"><div class="metric-label">KREDIT</div><div class="metric-value" id="d-kredit">-</div><div class="metric-sub">EUR</div></div>
+  <div class="metric-card"><div class="metric-label">PERIOD</div><div class="metric-value" id="d-rok">-</div><div class="metric-sub">godina</div></div>
+  <div class="metric-card"><div class="metric-label">DTI</div><div class="metric-value" id="d-dti">-</div><div class="metric-sub"><span id="d-dti-status" class="status-badge" style="margin-top:2px"></span></div></div>
+</div>
+<div class="grid2" style="margin-bottom:10px">
+  <div class="card" style="margin-bottom:0"><div class="section-title">Struktura troška</div>
+    <div class="info-row"><span class="info-label">Ukupno vraćeno banci</span><span class="info-val" id="d-total">-</span></div>
+    <div class="info-row"><span class="info-label">Ukupna kamata</span><span class="info-val" id="d-kam-total">-</span></div>
+    <div class="info-row"><span class="info-label">Cena stana</span><span class="info-val" id="d-ukupno">-</span></div>
+    <div class="info-row"><span class="info-label">Efektivna cena stana</span><span class="info-val" id="d-efektivno">-</span></div>
+  </div>
+  <div class="card" style="margin-bottom:0"><div class="section-title">Buffer i sigurnost</div>
+    <div class="info-row"><span class="info-label">Prihod (trenutno)</span><span class="info-val" id="d-prihod">-</span></div>
+    <div class="info-row"><span class="info-label">Rata + trenutni rashodi</span><span class="info-val" id="d-rata-rash">-</span></div>
+    <div class="info-row"><span class="info-label">Buffer mesečno <span style="font-size:9px;color:var(--text3)">(trenutni prihod − rata − trenutni rashodi)</span></span><span class="info-val" id="d-buffer">-</span></div>
+    <div class="info-row"><span class="info-label">Buffer sa porodicom <span style="font-size:9px;color:var(--text3)">(realni prihod − rata − realni rashodi)</span></span><span class="info-val" id="d-buffer-por">-</span></div>
+  </div>
+</div>
+<div class="card">
+  <div class="section-title">DTI po scenariju prihoda</div>
+  <div class="grid3">
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:500;font-family:var(--mono)">PESIMISTIČKI</div><div style="font-size:18px;font-weight:600;font-family:var(--mono)" id="d-dti-neg">-</div><div id="d-pill-neg" class="pill" style="margin-top:4px"></div></div>
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:500;font-family:var(--mono)">REALNI</div><div style="font-size:18px;font-weight:600;font-family:var(--mono)" id="d-dti-real">-</div><div id="d-pill-real" class="pill" style="margin-top:4px"></div></div>
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:500;font-family:var(--mono)">OPTIMISTIČKI</div><div style="font-size:18px;font-weight:600;font-family:var(--mono)" id="d-dti-pos">-</div><div id="d-pill-pos" class="pill" style="margin-top:4px"></div></div>
+  </div>
+</div>
+<div class="card"><div class="section-title">Decision assistant</div><div id="d-decision"></div></div>
+</div>
+
+<!-- SCENARIJI -->
+<div id="tab-scenariji" class="panel">
+<div class="card"><div class="section-title">Poređenje scenarija</div>
+  <div class="compare-row header"><span>Scenario</span><span style="text-align:right">Rata</span><span style="text-align:right">DTI</span><span style="text-align:right">Kamata</span><span style="text-align:right">Status</span></div>
+  <div id="scen-rows"></div>
+</div>
+<div class="sep"></div>
+<div class="card"><div class="section-title">Rok vs rata</div><div id="rok-rows"></div></div>
+<div class="sep"></div>
+<div class="card"><div class="section-title">Cena stana za željenu ratu</div>
+  <div class="slider-row"><label>Ciljna rata (€)</label><input type="range" min="400" max="2500" step="10" id="s-target-rata" value="675"><span id="s-target-rata-out">675 €</span></div>
+  <div id="target-result"></div>
+</div>
+</div>
+
+<!-- PREVREMENA OTPLATA -->
+<div id="tab-otplata" class="panel">
+<div class="card"><div class="section-title">Jača rata na početku</div>
+  <div class="row-fields">
+    <div class="field"><label>Dodatna mesečna uplata (€)</label><input id="o-extra" value="825"></div>
+    <div class="field"><label>Broj meseci veće rate</label><input type="number" id="o-meseci" value="12"></div>
+  </div>
+  <p class="note">Višak iznad ugovorene rate ide u prevremenu otplatu glavnice. Nakon tog perioda rata se rekalkuliše.</p>
+</div>
+<div id="otplata-result"></div>
+<div class="sep"></div>
+<div class="card"><div class="section-title">Godišnja jednokratna otplata</div>
+  <div class="slider-row"><label>Godišnja uplata (€)</label><input type="range" min="0" max="100000" step="1000" id="o-godisnja" value="10000"><span id="o-godisnja-out">10.000 €</span></div>
+  <div class="slider-row"><label>Godina uplate</label><input type="range" min="1" max="30" step="1" id="o-godina-uplate" value="1"><span id="o-godina-uplate-out">God 1</span></div>
+  <div id="godisnja-result"></div>
+</div>
+</div>
+
+<!-- SCENARIO OTPLATE -->
+<div id="tab-scenario" class="panel">
+  <div class="sb-head">
+    <div>
+      <h2 class="sb-title">Scenario otplate</h2>
+      <p class="sb-sub">Uplate investitoru do podizanja kredita, pa otplata kredita. Izaberi mesec i vidi koliko još duguješ.</p>
+    </div>
+    <div class="sb-save"><span id="sbSaveStatus" class="sb-status"></span><button type="button" class="sb-btn sb-btn-primary" id="sbSave" onclick="sbSave()">Sačuvaj</button></div>
+  </div>
+  <div class="sb-answer" id="sc-answer"></div>
+  <div class="sb-timeline" id="sc-timeline"></div>
+
+  <h2 class="sb-part"><span>1</span>Do kredita: uplate investitoru</h2>
+  <p class="sb-part-sub">Svaka uplata investitoru smanjuje iznos kredita. Kredit = cena stana minus sve što uplatiš do meseca podizanja kredita.</p>
+  <section class="sb-block" id="sc-pre-inputs"></section>
+  <section class="sb-block">
+    <div class="sb-block-head"><div><h3>Događaji pre kredita</h3><p>Bonus, kirija, povrat PDV-a i drugi prihodi ili troškovi sa pravim datumom.</p></div><button type="button" class="sb-btn" onclick="addPreEvent()">Dodaj događaj</button></div>
+    <div id="sc-pre-events" class="sb-list"></div>
+  </section>
+  <div id="sc-pre-results"></div>
+
+  <h2 class="sb-part"><span>2</span>Kredit</h2>
+  <div class="sb-baseline" id="sc-baseline-row"></div>
+  <section class="sb-block">
+    <div class="sb-block-head"><div><h3>Mesečne dopune</h3><p>Dopuna preko rate ili fiksan iznos koji plaćaš mesečno bez obzira na ratu.</p></div><button type="button" class="sb-btn" onclick="addPhase()">Dodaj fazu</button></div>
+    <div id="sc-phases" class="sb-list"></div>
+  </section>
+  <section class="sb-block">
+    <div class="sb-block-head"><div><h3>Jednokratne uplate na kredit</h3><p>Bonus, povrat PDV-a i druge veće uplate posle podizanja kredita.</p></div><button type="button" class="sb-btn" onclick="addLump()">Dodaj uplatu</button></div>
+    <div id="sc-lumps" class="sb-list"></div>
+  </section>
+  <div id="sc-results"></div>
+</div>
+
+<!-- DNEVNIK -->
+<div id="tab-dnevnik" class="panel">
+  <div class="sb-head"><div><h2 class="sb-title">Dnevnik po mesecima</h2>
+    <p class="sb-sub">Koliko si uplatio svakog meseca, investitoru pa banci. Tačka označava važan događaj. Godine bez promena su u jednom redu.</p></div></div>
+  <div id="ledger" class="lg-list"></div>
+</div>
+
+<!-- GRAF -->
+<div id="tab-graf" class="panel">
+<div class="card"><div class="section-title">Amortizacioni plan</div><div style="position:relative;width:100%;height:260px"><canvas id="chartAmort"></canvas></div></div>
+<div class="sep"></div>
+<div class="card"><div class="section-title">Struktura rate: kamata i glavnica</div><div style="position:relative;width:100%;height:220px"><canvas id="chartStruct"></canvas></div></div>
+</div>
+
+<!-- INKREMENT -->
+<div id="tab-inkrement" class="panel">
+<div class="card">
+  <div class="section-title">Inkrementalna analiza</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- BASE panel -->
+    <div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-family:var(--mono);color:var(--text3);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border)">BAZNI SCENARIO</div>
+      <div class="row-fields" style="gap:6px">
+        <div class="field"><label>Cena stana (€)</label><input id="ib-cena" readonly class="auto-field"></div>
+        <div class="field"><label>Učešće (€)</label><input id="ib-ucesce" readonly class="auto-field"></div>
+      </div>
+      <div class="row-fields" style="gap:6px">
+        <div class="field"><label>Kredit (€)</label><input id="ib-kredit" readonly class="auto-field"></div>
+        <div class="field"><label>Kamata (%)</label><input id="ib-kamata" readonly class="auto-field"></div>
+      </div>
+      <div class="row-fields" style="gap:6px">
+        <div class="field"><label>Rok (god)</label><input id="ib-rok" readonly class="auto-field"></div>
+        <div class="field"><label>Rata (€/mes)</label><input id="ib-rata" readonly class="auto-field"></div>
+      </div>
+    </div>
+    <!-- INKREMENT panel -->
+    <div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-family:var(--mono);color:var(--blue);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--blue-border)">INKREMENT SCENARIO</div>
+      <div class="row-fields" style="gap:6px">
+        <div class="field"><label>Cena stana (€)</label><input id="ii-cena" readonly class="auto-field"></div>
+        <div class="field"><label>Učešće (€)</label><input id="ii-ucesce" readonly class="auto-field"></div>
+      </div>
+      <div class="row-fields" style="gap:6px">
+        <div class="field"><label>Kredit (€)</label><input id="ii-kredit" readonly class="auto-field"></div>
+        <div class="field"><label>Kamata (%)</label><input id="ii-kamata" readonly class="auto-field"></div>
+      </div>
+      <div class="row-fields" style="gap:6px">
+        <div class="field"><label>Rok (god)</label><input id="ii-rok" readonly class="auto-field"></div>
+        <div class="field"><label>Rata (€/mes)</label><input id="ii-rata" readonly class="auto-field"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:6px;margin-bottom:14px" id="inkSubTabs">
+    <button class="tab-btn active" onclick="setInkSubTab('kamata',this)">Kamata</button>
+    <button class="tab-btn" onclick="setInkSubTab('ucesce',this)">Učešće</button>
+    <button class="tab-btn" onclick="setInkSubTab('rata',this)">Rata</button>
+    <button class="tab-btn" onclick="setInkSubTab('rok',this)">Rok</button>
+  </div>
+  <div id="inkDeltaContent"></div>
+</div>
+</div>
+
+</div><!-- /calc-inner -->
+</div><!-- /calc-side -->
+
+<!-- ══ CHAT ══ -->
+<div class="chat-side">
+  <div class="chat-header">
+    <div>
+      <div class="chat-header-title">Asistent</div>
+      <div class="chat-header-sub">Pitaj o kreditu i scenariju otplate</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="newChat()" style="padding:3px 9px;font-size:9px;font-family:var(--mono);font-weight:600;letter-spacing:.06em;background:transparent;border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text3);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--blue-border)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">Novi razgovor</button>
+      <div class="chat-status" id="chatStatus"></div>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+
+
+  <div class="chat-input-row">
+    <textarea id="chatInput" placeholder="Postavi pitanje ili daj instrukciju..." rows="1"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════
+// KALKULATOR LOGIKA
+// ══════════════════════════════════════════
+const TABS=[
+  {id:'parametri',label:'Parametri'},
+  {id:'dashboard',label:'Dashboard'},
+  {id:'scenariji',label:'Scenariji'},
+  {id:'otplata',label:'Prevremena otplata'},
+  {id:'scenario',label:'Scenario otplate'},
+  {id:'dnevnik',label:'Dnevnik'},
+  {id:'graf',label:'Graf'},
+  {id:'inkrement',label:'Inkrement'}
+];
+const tabRow=document.getElementById('tabRow');
+TABS.forEach((t,i)=>{
+  const b=document.createElement('button');
+  b.className='tab-btn'+(i===0?' active':'');
+  b.textContent=t.label;
+  b.onclick=()=>{
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.getElementById('tab-'+t.id).classList.add('active');
+    b.classList.add('active');
+    if(t.id==='graf') buildGraf();
+    if(t.id==='scenario' || t.id==='dnevnik') renderScenario();
+    if(t.id==='inkrement') renderInkrement();
+  };
+  tabRow.appendChild(b);
+});
+
+function fmt(n){return Math.round(n).toLocaleString('de-DE')+' €'}
+function fmtP(n){return n.toFixed(1)+'%'}
+function num(id){
+  const el=document.getElementById(id);if(!el)return 0;
+  let raw=String(el.value);
+  // Strip thousand-separator dots (dot followed by exactly 3 digits, possibly repeated)
+  // but preserve decimal dot (dot followed by 1-2 digits at end, or dot not followed by 3 digits)
+  raw=raw.replace(/\.(?=\d{3}(?:\.|$))/g,'');
+  raw=raw.replace(',','.');
+  const v=parseFloat(raw);return isNaN(v)?0:v;
+}
+
+// Auto-format numeric inputs: show 200.000 on blur, raw 200000 on focus
+const fmtInputIds=['p-cena','p-ucesce','p-prihod-cur','p-prihod-neg','p-prihod','p-prihod-pos','p-zena','p-rashodi-cur','p-rashodi-neg','p-rashodi','p-rashodi-por','o-extra'];
+function setupInputFormatting(){
+  fmtInputIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    // Live formatting while typing: insert thousand separators as user types
+    el.addEventListener('input',()=>{
+      const raw=el.value.replace(/[^\d]/g,''); // strip everything except digits
+      if(raw===''){el.value='';return;}
+      const n=parseInt(raw,10);
+      if(!isNaN(n)){
+        const cursor=el.selectionStart;
+        const oldLen=el.value.length;
+        el.value=n.toLocaleString('de-DE');
+        // Adjust cursor position after reformatting
+        const newLen=el.value.length;
+        const diff=newLen-oldLen;
+        el.setSelectionRange(cursor+diff,cursor+diff);
+      }
+    });
+    // On blur — clean up (same as live, but ensures consistency)
+    el.addEventListener('blur',()=>{
+      const v=num(id);
+      if(v>0) el.value=Math.round(v).toLocaleString('de-DE');
+      else if(v===0 && id==='p-zena') el.value='0';
+    });
+    // Strip formatting on focus for editing — NO, keep formatted now
+    el.addEventListener('focus',()=>{
+      el.select();
+    });
+    // Format initial values
+    const v=num(id);
+    if(v>0) el.value=Math.round(v).toLocaleString('de-DE');
+  });
+}
+function rataFn(k,i,r){const m=i/100/12,n=Math.round(r*12);if(m===0||n===0)return 0;return k*(m*Math.pow(1+m,n))/(Math.pow(1+m,n)-1);}
+function rokFn(k,i,r){const m=i/100/12;if(m===0)return r>0?k/r/12:0;const v=1-k*m/r;if(v<=0)return 0;return -Math.log(v)/Math.log(1+m)/12;}
+function maxKreditZaRatu(rata,kam,rok){const r=kam/100/12,n=rok*12;if(r===0)return rata*n;return rata*(Math.pow(1+r,n)-1)/(r*Math.pow(1+r,n));}
+function ukKamata(kredit,kam,rok){return rataFn(kredit,kam,rok)*rok*12-kredit;}
+function dtiStatus(d){
+  if(d<.20)return{l:'SAFE',c:'status-safe',p:'pill-safe'};
+  if(d<.25)return{l:'OK',c:'status-ok',p:'pill-ok'};
+  if(d<.30)return{l:'STRETCH',c:'status-stretch',p:'pill-ok'};
+  return{l:'RISK',c:'status-risk',p:'pill-risk'};
+}
+
+let rataMode=false;
+
+function wireParametri(){
+  // Formatted fields (thousands separator): recalc on blur only, not every keystroke
+  // Typing "60000" passes through "6" -> kredit shows 199994 mid-type without this guard
+  const fmtIds=['p-cena','p-ucesce','p-prihod-cur','p-prihod','p-prihod-neg','p-prihod-pos','p-zena','p-rashodi-cur','p-rashodi','p-rashodi-neg','p-rashodi-por'];
+  fmtIds.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('blur',()=>recalcParams());});
+  // Non-formatted: live recalc fine
+  const el_kamata=document.getElementById('p-kamata');
+  if(el_kamata)el_kamata.addEventListener('input',()=>recalcParams());
+  document.getElementById('p-rok').addEventListener('input',()=>{if(rataMode)switchToRokMode();recalcParams();});
+  document.getElementById('p-rata-input').addEventListener('input',()=>{recalcParams();});
+  document.getElementById('p-rata-input').addEventListener('focus',()=>{if(!rataMode)switchToRataMode();});
+  document.getElementById('p-rok').addEventListener('focus',()=>{if(rataMode)switchToRokMode();});
+  document.getElementById('s-target-rata').addEventListener('input',calcTargetRata);
+  document.getElementById('o-extra').addEventListener('input',calcOtplata);
+  document.getElementById('o-meseci').addEventListener('input',calcOtplata);
+  document.getElementById('o-godisnja').addEventListener('input',calcGodisnja);
+  document.getElementById('o-godina-uplate').addEventListener('input',calcGodisnja);
+}
+
+function switchToRataMode(){
+  rataMode=true;
+  document.getElementById('p-rok').readOnly=true;document.getElementById('p-rok').classList.add('auto-field');
+  document.getElementById('p-rata-input').readOnly=false;document.getElementById('p-rata-input').classList.remove('auto-field');
+}
+function switchToRokMode(){
+  rataMode=false;
+  document.getElementById('p-rok').readOnly=false;document.getElementById('p-rok').classList.remove('auto-field');
+  document.getElementById('p-rata-input').readOnly=true;document.getElementById('p-rata-input').classList.add('auto-field');
+}
+
+function recalcParams(){
+  const cena=num('p-cena'),ucesce=num('p-ucesce'),kredit=cena-ucesce,kamata=num('p-kamata');
+  document.getElementById('p-kredit').value=kredit>0?kredit.toLocaleString('de-DE'):'';
+  if(kredit<=0||kamata<=0)return;
+  if(!rataMode){
+    const rok=num('p-rok');
+    if(rok>0)document.getElementById('p-rata-input').value=Math.round(rataFn(kredit,kamata,rok)).toLocaleString('de-DE');
+  } else {
+    const rata=num('p-rata-input');
+    if(rata>0){const rok=rokFn(kredit,kamata,rata);document.getElementById('p-rok').value=(rok>0&&rok<51)?Math.round(rok*10)/10:'';}
+  }
+  calc();
+}
+
+function getInputs(){
+  const cena=num('p-cena')||200000,ucesce=num('p-ucesce')||40000,kredit=num('p-kredit')||(cena-ucesce);
+  return{cena,ucesce,kredit,kamata:num('p-kamata')||4.5,rok:num('p-rok')||15,
+    prihodCur:num('p-prihod-cur')||2800,prihod:num('p-prihod')||3000,
+    prihodNeg:num('p-prihod-neg')||2200,prihodPos:num('p-prihod-pos')||3800,
+    zena:num('p-zena')||0,
+    rashodiCur:num('p-rashodi-cur')||1200,rashodi:num('p-rashodi')||1200,
+    rashodiNeg:num('p-rashodi-neg')||1200,rashodiPor:num('p-rashodi-por')||1600
+  };
+}
+
+function calc(){
+  const inp=getInputs();
+  const rata=rataFn(inp.kredit,inp.kamata,inp.rok);
+  const prihod=inp.prihod+(inp.zena||0);
+  const dti=rata/inp.prihodCur;
+  const ltv=inp.kredit/inp.cena;
+  const kam=ukKamata(inp.kredit,inp.kamata,inp.rok);
+  const total=inp.kredit+kam;
+  const buffer=inp.prihodCur-rata-inp.rashodiCur;
+  const bufferPor=inp.prihod-rata-inp.rashodi;
+  const dtiNeg=rata/inp.prihodNeg;
+  const dtiReal=rata/(inp.prihod+(inp.zena||0));
+  const dtiPos=rata/inp.prihodPos;
+  const st=dtiStatus(dti);
+
+  document.getElementById('d-rata').textContent=Math.round(rata).toLocaleString('de-DE');
+  document.getElementById('d-kredit').textContent=inp.kredit.toLocaleString('de-DE');
+  document.getElementById('d-dti').textContent=fmtP(dti*100);
+  document.getElementById('d-rok').textContent=inp.rok%1===0?inp.rok:inp.rok.toFixed(1);
+  const badge=document.getElementById('d-dti-status');badge.textContent=st.l;badge.className='status-badge '+st.c;
+  document.getElementById('d-total').textContent=fmt(total);
+  document.getElementById('d-kam-total').textContent=fmt(kam);
+  document.getElementById('d-ukupno').textContent=fmt(inp.cena);
+  document.getElementById('d-efektivno').textContent=fmt(inp.cena+kam);
+  document.getElementById('d-prihod').textContent=fmt(inp.prihodCur);
+  document.getElementById('d-rata-rash').textContent=fmt(rata+inp.rashodiCur);
+  document.getElementById('d-buffer').textContent=fmt(buffer);
+  document.getElementById('d-buffer-por').textContent=fmt(bufferPor);
+  const sn=dtiStatus(dtiNeg),sp=dtiStatus(dtiPos);
+  document.getElementById('d-dti-neg').textContent=fmtP(dtiNeg*100);
+  document.getElementById('d-dti-real').textContent=fmtP(dtiReal*100);
+  document.getElementById('d-dti-pos').textContent=fmtP(dtiPos*100);
+  const pn=document.getElementById('d-pill-neg');pn.textContent=sn.l;pn.className='pill '+sn.p;
+  const srReal=dtiStatus(dtiReal);const pr=document.getElementById('d-pill-real');pr.textContent=srReal.l;pr.className='pill '+srReal.p;
+  const pp=document.getElementById('d-pill-pos');pp.textContent=sp.l;pp.className='pill '+sp.p;
+  buildDecision(dti,buffer,bufferPor,ltv,inp.kredit,inp,rata);
+  buildScenarii(inp);
+  calcOtplata();calcGodisnja();calcTargetRata();
+}
+
+function buildDecision(dti,buffer,bufferPor,ltv,kredit,inp,rata){
+  const el=document.getElementById('d-decision');const L=[];
+  if(dti<.20)L.push({c:'decision-safe',t:'DTI od '+fmtP(dti*100)+' je u sigurnoj zoni.'});
+  else if(dti<.25)L.push({c:'decision-safe',t:'DTI od '+fmtP(dti*100)+' je prihvatljiv. Pazi na rast rashoda.'});
+  else if(dti<.30)L.push({c:'decision-stretch',t:'DTI od '+fmtP(dti*100)+' je napregnut. Razmotri veće učešće ili duži rok.'});
+  else L.push({c:'decision-risk',t:'DTI od '+fmtP(dti*100)+' prelazi 30%, scenario je rizičan.'});
+  if(buffer<200)L.push({c:'decision-risk',t:'Buffer od '+fmt(buffer)+' je opasno nizak (min 300-500 €).'});
+  else if(buffer<500)L.push({c:'decision-stretch',t:'Buffer od '+fmt(buffer)+' je ograničen.'});
+  else L.push({c:'decision-safe',t:'Buffer od '+fmt(buffer)+' je solidan.'});
+  if(bufferPor<0)L.push({c:'decision-risk',t:'Sa porodicom, mesečni minus bi bio '+fmt(bufferPor)+'.'});
+  else if(bufferPor<300)L.push({c:'decision-stretch',t:'Sa porodicom, buffer pada na '+fmt(bufferPor)+'.'});
+  if(ltv>.85)L.push({c:'decision-stretch',t:'LTV od '+fmtP(ltv*100)+' je visok.'});
+  el.innerHTML=L.map(x=>'<div class="decision-box '+x.c+'">'+x.t+'</div>').join('');
+}
+
+function buildScenarii(inp){
+  const cfgs=[
+    {l:Math.round(inp.kredit/1000)+'k / '+inp.rok+' god (tekući)',k:inp.kredit,r:inp.rok,h:1},
+    {l:'140k / 15 god',k:140000,r:15},{l:'160k / 15 god',k:160000,r:15},
+    {l:Math.round(inp.kredit/1000)+'k / 20 god',k:inp.kredit,r:20},
+  ];
+  document.getElementById('scen-rows').innerHTML=cfgs.map(c=>{
+    const r=rataFn(c.k,inp.kamata,c.r),d=r/inp.prihod,km=ukKamata(c.k,inp.kamata,c.r),s=dtiStatus(d);
+    return`<div class="compare-row${c.h?' highlight-row':''}"><span>${c.l}</span><span style="text-align:right;font-weight:500;font-family:var(--mono)">${Math.round(r).toLocaleString('de-DE')}</span><span style="text-align:right;font-family:var(--mono)">${fmtP(d*100)}</span><span style="text-align:right;font-family:var(--mono)">${Math.round(km).toLocaleString('de-DE')} €</span><span style="text-align:right"><span class="pill ${s.p}">${s.l}</span></span></div>`;
+  }).join('');
+  const currentRok=inp.rok;
+  const rokOptions=[currentRok,...[10,15,20,25,30].filter(y=>Math.abs(y-currentRok)>0.5)];
+  document.getElementById('rok-rows').innerHTML=`<div class="compare-row header"><span>Period</span><span style="text-align:right">Rata</span><span style="text-align:right">DTI</span><span style="text-align:right">Kamata</span><span style="text-align:right">Status</span></div>`+rokOptions.map((y,i)=>{
+    const r=rataFn(inp.kredit,inp.kamata,y),d=r/inp.prihod,km=ukKamata(inp.kredit,inp.kamata,y),s=dtiStatus(d);
+    return`<div class="compare-row${i===0?' highlight-row':''}"><span>${y} god${i===0?' <span style="font-size:9px;color:var(--text3)">(tekući)</span>':''}</span><span style="text-align:right;font-family:var(--mono)">${Math.round(r).toLocaleString('de-DE')}</span><span style="text-align:right;font-family:var(--mono)">${fmtP(d*100)}</span><span style="text-align:right;font-family:var(--mono)">${Math.round(km).toLocaleString('de-DE')} €</span><span style="text-align:right"><span class="pill ${s.p}">${s.l}</span></span></div>`;
+  }).join('');
+}
+
+function calcTargetRata(){
+  const r=num('s-target-rata')||675;
+  document.getElementById('s-target-rata-out').textContent=Math.round(r).toLocaleString('de-DE')+' €';
+  const inp=getInputs(),k=maxKreditZaRatu(r,inp.kamata,inp.rok),c=k+inp.ucesce,d=r/inp.prihod,s=dtiStatus(d);
+  document.getElementById('target-result').innerHTML=`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:7px 9px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--mono)">kamata ${inp.kamata}% · period ${inp.rok}g · učešće ${fmt(inp.ucesce)}</div><div class="grid3"><div class="metric-card"><div class="metric-label">CENA STANA</div><div class="metric-value" style="font-size:17px">${Math.round(c).toLocaleString('de-DE')} €</div></div><div class="metric-card"><div class="metric-label">KREDIT</div><div class="metric-value" style="font-size:17px">${Math.round(k).toLocaleString('de-DE')} €</div></div><div class="metric-card"><div class="metric-label">DTI</div><div class="metric-value" style="font-size:17px">${fmtP(d*100)}</div><div class="metric-sub"><span class="pill ${s.p}">${s.l}</span></div></div></div>`;
+}
+
+function calcOtplata(){
+  const inp=getInputs(),kredit=inp.kredit,extra=num('o-extra')||825,meseci=num('o-meseci')||12;
+  const r=inp.kamata/100/12,n=Math.round(inp.rok*12),rata=rataFn(kredit,inp.kamata,inp.rok);
+  let ost=kredit,ukKam=0;
+  for(let i=0;i<meseci;i++){const k=ost*r;ost-=(rata-k)+extra;ukKam+=k;if(ost<0)ost=0;}
+  const novaR=rataFn(Math.max(0,ost),inp.kamata,(n-meseci)/12);
+  document.getElementById('otplata-result').innerHTML=`<div class="card"><div class="section-title">Rezultat simulacije</div><div class="grid4"><div class="metric-card"><div class="metric-label">NOVA RATA</div><div class="metric-value" style="font-size:17px">${Math.round(novaR).toLocaleString('de-DE')}</div><div class="metric-sub">€/mes</div></div><div class="metric-card"><div class="metric-label">OSTATAK DUGA</div><div class="metric-value" style="font-size:17px">${Math.round(Math.max(0,ost)).toLocaleString('de-DE')}</div><div class="metric-sub">EUR</div></div><div class="metric-card"><div class="metric-label">UŠTEDA</div><div class="metric-value" style="font-size:17px;color:var(--safe)">${Math.round(Math.max(0,rata*n-(rata*meseci+extra*meseci+novaR*(n-meseci)))).toLocaleString('de-DE')}</div><div class="metric-sub">EUR</div></div><div class="metric-card"><div class="metric-label">SMANJENJE</div><div class="metric-value" style="font-size:17px;color:var(--safe)">${Math.round(rata-novaR).toLocaleString('de-DE')}</div><div class="metric-sub">€/mes</div></div></div><p class="note" style="margin-top:10px">Uz +${Math.round(extra).toLocaleString('de-DE')} € mesečno ${meseci} meseci: rata pada sa ${Math.round(rata).toLocaleString('de-DE')} € na ${Math.round(novaR).toLocaleString('de-DE')} €.</p></div>`;
+}
+
+function calcGodisnja(){
+  const inp=getInputs(),kredit=inp.kredit,uplata=num('o-godisnja')||5000,godU=num('o-godina-uplate')||1;
+  document.getElementById('o-godisnja-out').textContent=Math.round(uplata).toLocaleString('de-DE')+' €';
+  const maxG=Math.max(1,Math.floor(inp.rok));document.getElementById('o-godina-uplate').max=maxG;
+  const gE=Math.min(godU,maxG);document.getElementById('o-godina-uplate-out').textContent='God '+gE;
+  const r=inp.kamata/100/12,n=Math.round(inp.rok*12),rata=rataFn(kredit,inp.kamata,inp.rok);
+  let ost=kredit,mk=n,um=(gE-1)*12+11;
+  for(let i=0;i<n;i++){ost-=(rata-ost*r);if(i===um){ost-=uplata;}if(ost<=0){mk=i+1;ost=0;break;}}
+  if(ost>0)mk=n;
+  document.getElementById('godisnja-result').innerHTML=`<div class="grid3" style="margin-top:8px"><div class="metric-card"><div class="metric-label">KREDIT PLAĆEN ZA</div><div class="metric-value" style="font-size:17px">${(mk/12).toFixed(1)} god</div></div><div class="metric-card"><div class="metric-label">UŠTEDA KAMATA</div><div class="metric-value" style="font-size:17px;color:var(--safe)">${Math.round(Math.max(0,rata*n-(rata*mk+uplata))).toLocaleString('de-DE')} €</div></div><div class="metric-card"><div class="metric-label">SKRAĆENJE</div><div class="metric-value" style="font-size:17px">${Math.max(0,(n-mk)/12).toFixed(1)} god</div></div></div>`;
+}
+
+let cA=null,cS=null;
+function buildGraf(){
+  const inp=getInputs(),k=inp.kredit,kam=inp.kamata,rok=inp.rok;
+  const r=kam/100/12,n=Math.round(rok*12),rata=rataFn(k,kam,rok);
+  let sal=[],kms=[],gls=[],o=k;
+  for(let i=0;i<n;i++){const km=o*r,gl=rata-km;o-=gl;sal.push(Math.max(0,o));kms.push(km);gls.push(gl);}
+  const lb=[],sG=[],kG=[],gG=[];
+  for(let i=0;i<n;i+=12){lb.push('God '+(i/12+1));sG.push(Math.round(sal[Math.min(i,n-1)]));let a=0,b=0;for(let j=i;j<Math.min(i+12,n);j++){a+=kms[j];b+=gls[j];}kG.push(Math.round(a));gG.push(Math.round(b));}
+  const gc='rgba(0,0,0,.06)',tc='#888';
+  if(cA)cA.destroy();
+  cA=new Chart(document.getElementById('chartAmort').getContext('2d'),{type:'line',data:{labels:lb,datasets:[{label:'Dug',data:sG,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.08)',fill:true,tension:.3,pointRadius:2,pointBackgroundColor:'#2563eb'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v.toLocaleString('de-DE'),color:tc,font:{family:'Geist',size:10}},grid:{color:gc},border:{display:false}},x:{ticks:{color:tc,font:{family:'Geist',size:10}},grid:{display:false},border:{display:false}}}}});
+  if(cS)cS.destroy();
+  cS=new Chart(document.getElementById('chartStruct').getContext('2d'),{type:'bar',data:{labels:lb,datasets:[{label:'Kamata',data:kG,backgroundColor:'rgba(220,38,38,.55)',stack:'s'},{label:'Glavnica',data:gG,backgroundColor:'rgba(22,163,74,.55)',stack:'s'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{stacked:true,ticks:{callback:v=>v.toLocaleString('de-DE'),color:tc,font:{family:'Geist',size:10}},grid:{color:gc},border:{display:false}},x:{stacked:true,ticks:{color:tc,font:{family:'Geist',size:10}},grid:{display:false},border:{display:false}}}}});
+}
+
+// ══════════════════════════════════════════
+// CHAT LOGIKA
+// ══════════════════════════════════════════
+let chatHistory=[];
+
+function getKalkulatorState(){
+  const inp=getInputs();
+  const rata=rataFn(inp.kredit,inp.kamata,inp.rok);
+  const totalInterest=ukKamata(inp.kredit,inp.kamata,inp.rok);
+  const totalPaid=inp.kredit+totalInterest;
+  const dti=rata/inp.prihodCur;
+  const buffer=inp.prihodCur-rata-inp.rashodiCur;
+  const bufferPor=inp.prihod-rata-inp.rashodi;
+  return{
+    kredit:inp.kredit, kamata:inp.kamata, rok:inp.rok,
+    cena:inp.cena, ucesce:inp.ucesce, ltv:+(inp.kredit/inp.cena*100).toFixed(1),
+    rata:Math.round(rata), totalKamata:Math.round(totalInterest), totalPaid:Math.round(totalPaid),
+    dti:+(dti*100).toFixed(1),
+    prihodi:{trenutni:inp.prihodCur, pesimisticki:inp.prihodNeg, realni:inp.prihod, optimisticki:inp.prihodPos, zena:inp.zena},
+    rashodi:{trenutni:inp.rashodiCur, pesimisticki:inp.rashodiNeg, realni:inp.rashodi, optimisticki:inp.rashodiPor},
+    buffer:Math.round(buffer), bufferPorodica:Math.round(bufferPor),
+    prevremenaOtplata:calcPretermState(),
+    scenarioOtplate:sbChatState()
+  };
+}
+
+function calcPretermState(){
+  const inp=getInputs();
+  const kredit=inp.kredit, kamata=inp.kamata, rok=inp.rok;
+  const r=kamata/100/12, n=Math.round(rok*12), rata=rataFn(kredit,kamata,rok);
+
+  const extra=num('o-extra')||825, meseci=num('o-meseci')||12;
+  let ost=kredit;
+  for(let i=0;i<meseci;i++){const k=ost*r;ost-=(rata-k)+extra;if(ost<0)ost=0;}
+  const novaRata=rataFn(Math.max(0,ost),kamata,(n-meseci)/12);
+  const ustedaJaka=Math.max(0,rata*n-(rata*meseci+extra*meseci+novaRata*(n-meseci)));
+
+  const uplata=num('o-godisnja')||10000, godU=num('o-godina-uplate')||1;
+  const gE=Math.min(godU,Math.max(1,Math.floor(rok)));
+  let ost2=kredit, mk=n, um=(gE-1)*12+11;
+  for(let i=0;i<n;i++){ost2-=(rata-ost2*r);if(i===um){ost2-=uplata;}if(ost2<=0){mk=i+1;ost2=0;break;}}
+  if(ost2>0)mk=n;
+  const ustedaGod=Math.max(0,(rata*n-(rata*mk+uplata)));
+
+  const plan=[];
+  let b=kredit;
+  for(let yr=1;yr<=Math.min(rok,5);yr++){
+    for(let m=0;m<12;m++){const k=b*r;b-=(rata-k);}
+    plan.push({godina:yr, ostatakDuga:Math.round(Math.max(0,b))});
+  }
+
+  return{
+    jakaRata:{dodatnoMesecno:extra, brojMeseci:meseci, novaRataPosle:Math.round(novaRata), smanjenjeRate:Math.round(rata-novaRata), ostatakPosle:Math.round(Math.max(0,ost)), ustedaKamata:Math.round(ustedaJaka)},
+    godisnja:{iznosUplate:uplata, godinaUplate:gE, kreditOtplacenZa:+(mk/12).toFixed(1), skracenje:+((n-mk)/12).toFixed(1), ustedaKamata:Math.round(ustedaGod)},
+    amortizacijaPrvih5god:plan
+  };
+}
+
+function buildAmortMonth(month){
+  const inp=getInputs();
+  const r=inp.kamata/100/12, rata=rataFn(inp.kredit,inp.kamata,inp.rok);
+  let bal=inp.kredit;
+  for(let i=0;i<month-1;i++){const k=bal*r;bal-=(rata-k);}
+  const interest=bal*r, principal=rata-interest;
+  return{month,balance:Math.round(bal),interest:Math.round(interest),principal:Math.round(principal),rata:Math.round(rata)};
+}
+
+const SYSTEM_PROMPT=`Ti si finansijski asistent integrisan u srpski mortgage kalkulator. Odgovaraš na srpskom jeziku.
+
+KALKULATOR IMA SLEDEĆE INPUTE (ID → šta je):
+- p-cena: vrednost stana u €
+- p-ucesce: učešće u €  
+- p-kamata: kamatna stopa u %
+- p-rok: period otplate u godinama
+- p-prihod-cur: trenutni mesečni prihod
+- p-prihod-neg: pesimistički prihod
+- p-prihod: realni prihod
+- p-prihod-pos: optimistički prihod
+- p-rashodi-cur: trenutni rashodi
+- p-rashodi-neg: pesimistički rashodi
+- p-rashodi: realni rashodi
+- p-rashodi-por: optimistički rashodi
+- p-zena: prihod partnerke
+
+FORMULE (za tvoje interne kalkulacije):
+- Rata (PMT): kredit * (r*(1+r)^n) / ((1+r)^n - 1) gde r=kamatna_stopa/100/12, n=rok*12
+- Rok iz rate: -ln(1 - kredit*r/rata) / ln(1+r) / 12
+- Maksimalan kredit za ratu: rata * ((1+r)^n - 1) / (r*(1+r)^n)
+- DTI = rata / mesečni_prihod
+- Buffer = prihod_trenutni - rata - rashodi_trenutni
+- Buffer porodica = prihod_realni - rata - rashodi_realni
+
+TI MOŽEŠ DA:
+1. ODGOVARAŠ na pitanja koristeći trenutni state kalkulatora
+2. MENJAŠ vrednosti u kalkulatoru vraćanjem JSON akcija
+3. RAČUNAŠ amortizacione scenarije interno
+
+KADA TREBA DA MENJAŠ KALKULATOR, vrati JSON objekat na kraju odgovora u formatu:
+<actions>
+{"fields": {"p-cena": 200000, "p-kamata": 4.5}, "mode": "rok"}
+</actions>
+
+"mode" je opciono: "rok" znači da je rok input (default), "rata" znači da je rata input.
+
+PRAVILA:
+- Budi koncizan i direktan, kao finansijski savetnik
+- Uvek navedi konkretan broj/rezultat pre objašnjenja
+- Ako menjaš parametre, KRATKO objasni šta si promenio i koji je rezultat
+- Ako pitanje zahteva samo analizu (ne menjanje), ne vraćaj actions blok
+- Koristi € za iznose, % za procente
+- Za amortizacioni plan specifičnog meseca izračunaj interno i prikaži
+- VAŽNO za kamatnu stopu (p-kamata): vrednost je PROCENAT kao broj. Ako korisnik kaže "4.5%", postavi p-kamata na 4.5 (NE na 45, NE na 0.045). Ako kaže "3.99%", postavi na 3.99. Decimalni separator u JSON-u je tačka.
+- VAŽNO za novčane iznose (p-cena, p-ucesce, itd.): vrednosti su CELE BROJKE u evrima. Ako korisnik kaže "200.000 €" ili "200000", postavi na 200000 (bez tačke/separatora). Ako kaže "4.500 €" za učešće, to je četiri hiljade petsto = 4500.
+
+STATE KALKULATORA UKLJUČUJE I prevremenaOtplata objekat sa:
+- jakaRata: simulacija N meseci povećane rate (dodatnoMesecno, brojMeseci, novaRataPosle, smanjenjeRate, ustedaKamata)
+- godisnja: jednokratna uplata u godini G (iznosUplate, godinaUplate, kreditOtplacenZa, skracenje, ustedaKamata)  
+- amortizacijaPrvih5god: ostatak duga na kraju svake od prvih 5 godina
+
+Možeš da menjaš parametre prevremene otplate:
+- o-extra: dodatna mesečna uplata (€)
+- o-meseci: broj meseci veće rate
+- o-godisnja: godišnja jednokratna uplata (€)
+- o-godina-uplate: godina u kojoj se vrši uplata
+
+SCENARIO OTPLATE TAB:
+Tab "Scenario otplate" koristi prave mesece (format YYYY-MM) i ima dva dela.
+1) DO KREDITA (state.scenarioOtplate.doKredita): korisnik plaća investitoru od meseca prvaUplata do meseca pre podizanjaKredita (kada gradnja dostigne 60%).
+Svaka uplata investitoru smanjuje kredit: iznosKredita = cenaSaPdv - uplacenoInvestitoru. Učešće u Parametrima se računa automatski iz ovog dela.
+Svaki mesec: ostatak = plata - troškovi + prihodi po pravilu - troškovi događaja; investitoru ide procenat ostatka (prviPct% prvih prviMeseci meseci, zatim zatimPct%), ostatak ostaje kao gotovina.
+Prvog meseca investitoru ide i "odmah" iz početne gotovine. Događaji: tip prihod/trosak, date, amount, ponavljanje (jednom, mesecno, 6m, 12m), do (opciono), investitoru (pravilo, sve, nista).
+poMesecima pokazuje uplatu investitoru, ukupno uplaćeno i gotovinu za svaki mesec.
+2) KREDIT (state.scenarioOtplate.kredit): kredit se podiže u mesecu podizanjaKredita, prva rata je sledećeg meseca (prvaRata).
+Faze: from, months, extra, tip. tip "dopuna" = extra se plaća preko rate; tip "ukupno" = mesečno se plaća ukupno extra (ali ne manje od rate banke). Jednokratne uplate (uplate): date, amount, label. Povrat PDV-a za prvi stan računa se automatski za 40 m² (povratPdv).
+mode: "rok" = rata ostaje ista i rok se skraćuje, "rata" = posle uplate banka smanjuje ratu.
+Kada predložiš izmene, na kraju odgovora dodaj actions blok (pošalji samo delove koje menjaš):
+<actions>
+{"doKredita": {"plata": 4491, "troskovi": 1546, "prviMeseci": 6, "prviPct": 100, "zatimPct": 70,
+   "dogadjaji": [{"label": "Bonus", "tip": "prihod", "date": "2027-04", "amount": 10000, "ponavljanje": "jednom", "investitoru": "pravilo"}]},
+ "scenario": [{"label": "Dopuna od plate", "from": "2028-01", "months": 24, "extra": 500, "mode": "rok"}],
+ "uplate": [{"label": "Povrat PDV-a", "date": "2028-06", "amount": 12000, "mode": "rok"}]}
+</actions>
+Ako šalješ "dogadjaji", pošalji kompletnu listu jer zamenjuje postojeću. Ako pošalješ samo "scenario" ili samo "uplate", menja se samo taj deo.`;
+
+let aiSample;
+async function callClaude(userMessage){
+  if(aiSample===undefined){ try{ aiSample=(window.claude && await window.claude.use('sample'))||null; }catch(e){ aiSample=null; } }
+  if(!aiSample) throw new Error('asistent nije dostupan u ovom prikazu');
+  const msgs=chatHistory.map(m=>({role:m.role, content:m.content}));
+  while(msgs.length && msgs[0].role!=='user') msgs.shift();
+  msgs[0]={role:'user', content:`[UPUTSTVO ZA ASISTENTA]\n${SYSTEM_PROMPT}\n\n[PORUKA]\n${msgs[0].content}`};
+  try{
+    const res=await aiSample(msgs,{cache:false});
+    return res.text;
+  }catch(e){
+    const c=e&&e.code;
+    throw new Error(c==='not_granted'?'asistent nije odobren za ovu stranicu':c==='rate_limited'?'previše pitanja zaredom, sačekaj malo':(e&&e.message)||'nepoznata greška');
+  }
+}
+
+function applyActions(actionsJson){
+  const applied=[];
+  try{
+    const obj=JSON.parse(actionsJson);
+
+    // Apply fields FIRST (before scenario, so baseline picks up new values)
+    if(obj.fields){
+      // Set mode first if specified
+      if(obj.mode==='rata'&&!rataMode) switchToRataMode();
+      else if(obj.mode==='rok'&&rataMode) switchToRokMode();
+      
+      Object.entries(obj.fields).forEach(([id,val])=>{
+        const el=document.getElementById(id);
+        if(el&&!el.readOnly){
+          // Format with thousand separator if this is a formatted field
+          if(fmtInputIds.includes(id) && typeof val === 'number' && Number.isInteger(val)){
+            el.value=val.toLocaleString('de-DE');
+          } else {
+            el.value=val;
+          }
+          // Flash highlight
+          el.classList.remove('field-updated');
+          void el.offsetWidth;
+          el.classList.add('field-updated');
+          const label=el.closest('.field')?.querySelector('label')?.textContent?.trim()||id;
+          applied.push(label.replace(/\s*\(.*\)/,''));
+        }
+      });
+      recalcParams();
+      if('p-cena' in obj.fields){ const v=num('p-cena'); if(v>0) scPre.cena=v; renderScenario(); }
+    }
+
+    if(obj.doKredita && typeof obj.doKredita==='object'){
+      applyPreFromChat(obj.doKredita);
+      applied.push('Do kredita');
+    }
+
+    // Apply scenario AFTER fields so baseline row reflects updated parameters
+    if(Array.isArray(obj.scenario) || Array.isArray(obj.uplate)){
+      applyScenarioFromChat(obj.scenario, obj.uplate);
+      applied.push('Scenario otplate');
+    }
+  }catch(e){console.error('Actions parse error:',e);}
+  return applied;
+}
+
+function parseResponse(raw){
+  const actionsMatch=raw.match(/<actions>([\s\S]*?)<\/actions>/);
+  const text=raw.replace(/<actions>[\s\S]*?<\/actions>/g,'').trim();
+  return{text, actionsJson: actionsMatch?actionsMatch[1].trim():null};
+}
+
+function formatMessageText(text){
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+function addMessage(role, content, actionPills=[]){
+  const msgs=document.getElementById('chatMessages');
+  const div=document.createElement('div');
+  div.className=`msg msg-${role}`;
+  
+  const bubble=document.createElement('div');
+  bubble.className='msg-bubble';
+  bubble.innerHTML=formatMessageText(content);
+  
+  if(actionPills.length>0){
+    const pillsDiv=document.createElement('div');
+    pillsDiv.style.marginTop='6px';
+    actionPills.forEach(p=>{
+      const span=document.createElement('span');
+      span.className='action-pill done';
+      span.textContent='✓ '+p;
+      pillsDiv.appendChild(span);
+    });
+    bubble.appendChild(pillsDiv);
+  }
+  
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function setThinking(on){
+  document.getElementById('chatStatus').className='chat-status'+(on?' thinking':'');
+  document.getElementById('sendBtn').disabled=on;
+}
+
+function buildWelcomeMessage(){
+  const s=getKalkulatorState();
+  const pt=s.prevremenaOtplata;
+  const dtiStatus=s.dti<20?'✓ SAFE':s.dti<25?'~ OK':s.dti<30?'⚠ STRETCH':'✗ RISK';
+  const bufferStatus=s.buffer>500?'solidan':s.buffer>200?'ograničen':'nizak';
+  
+  let msg=`**Novi razgovor. Pročitao sam trenutno stanje kalkulatora.**
+
+`;
+  msg+=`**Kredit:** ${s.kredit.toLocaleString('de-DE')} € · **Kamata:** ${s.kamata}% · **Rok:** ${s.rok} god
+`;
+  msg+=`**Rata:** ${s.rata.toLocaleString('de-DE')} €/mes · **DTI:** ${s.dti}% (${dtiStatus})
+`;
+  msg+=`**Ukupna kamata:** ${s.totalKamata.toLocaleString('de-DE')} €
+`;
+  msg+=`**Buffer:** ${s.buffer.toLocaleString('de-DE')} € (${bufferStatus}) · **Buffer porodica:** ${s.bufferPorodica.toLocaleString('de-DE')} €
+
+`;
+  
+  if(pt){
+    msg+=`**Prevremena otplata (trenutni parametri):**
+`;
+    msg+=`· Jaka rata ${pt.jakaRata.brojMeseci} mes (+${pt.jakaRata.dodatnoMesecno.toLocaleString('de-DE')} €) → rata pada na ${pt.jakaRata.novaRataPosle.toLocaleString('de-DE')} €, štednja ${pt.jakaRata.ustedaKamata.toLocaleString('de-DE')} €
+`;
+    msg+=`· Jednokratna ${pt.godisnja.iznosUplate.toLocaleString('de-DE')} € u god. ${pt.godisnja.godinaUplate} → kredit gotov za ${pt.godisnja.kreditOtplacenZa} god, štednja ${pt.godisnja.ustedaKamata.toLocaleString('de-DE')} €
+
+`;
+  }
+  
+  msg+=`Šta hoćeš da istražiš?`;
+  return msg;
+}
+
+function newChat(){
+  chatHistory=[];
+  const msgs=document.getElementById('chatMessages');
+  msgs.innerHTML='';
+  addMessage('assistant', buildWelcomeMessage());
+}
+
+async function sendMessage(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text)return;
+  
+  input.value='';
+  input.style.height='';
+  addMessage('user',text);
+  setThinking(true);
+  
+  // Add to history (without state injection — that's added per-call)
+  chatHistory.push({role:'user', content:`[TRENUTNI STATE]: ${JSON.stringify(getKalkulatorState(),null,0)}\n\n${text}`});
+  
+  try{
+    const raw=await callClaude(text);
+    const {text:responseText, actionsJson}=parseResponse(raw);
+    
+    let appliedFields=[];
+    if(actionsJson){
+      appliedFields=applyActions(actionsJson);
+    }
+    
+    addMessage('assistant', responseText, appliedFields);
+    chatHistory.push({role:'assistant', content:raw});
+    
+    // Keep history to last 8 exchanges
+    if(chatHistory.length>16) chatHistory=chatHistory.slice(-16);
+    
+  }catch(e){
+    addMessage('assistant',`Greška: ${e.message}.`);
+  }finally{
+    setThinking(false);
+  }
+}
+
+function useSuggestion(el){
+  document.getElementById('chatInput').value=el.textContent;
+  sendMessage();
+}
+
+// Auto-resize textarea
+document.getElementById('chatInput').addEventListener('input',function(){
+  this.style.height='auto';
+  this.style.height=Math.min(this.scrollHeight,100)+'px';
+});
+
+document.getElementById('chatInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+
+
+// ══════════════════════════════════════════
+// SCENARIO OTPLATE (pravi meseci)
+// Faza 1: uplate investitoru do podizanja kredita. Faza 2: kredit na ostatak cene.
+// ══════════════════════════════════════════
+
+function ymNow(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function ymAdd(ym,n){ const [y,m]=ym.split('-').map(Number); const t=y*12+(m-1)+n; return Math.floor(t/12)+'-'+String(t%12+1).padStart(2,'0'); }
+function ymDiff(a,b){ const [y1,m1]=a.split('-').map(Number), [y2,m2]=b.split('-').map(Number); return (y2*12+m2)-(y1*12+m1); }
+const YM_MONTHS=['jan','feb','mar','apr','maj','jun','jul','avg','sep','okt','nov','dec'];
+function ymFmt(ym){ if(!ym||!/^\d{4}-\d{2}$/.test(ym)) return '-'; return YM_MONTHS[+ym.slice(5,7)-1]+' '+ym.slice(0,4); }
+const validYm = s => typeof s==='string' && /^\d{4}-\d{2}$/.test(s);
+const sbEsc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sbNum = v => (Math.round(v)||0).toLocaleString('de-DE');
+
+// ── Faza 1: do kredita ──
+let scPre = {
+  cena: 301127, cenaBezPdv: 273751, povrsina: 54.86, pdvM2: 40,
+  start: '2026-10', kredit: '2027-12',
+  gotovina: 95000, odmah: 95000,
+  plata: 4491, troskovi: 1546,
+  prviMeseci: 7, prviPct: 100, zatimPct: 70,
+  dogadjaji: [
+    {id: 101, label: 'Produženje stana u kome živim (do juna 2027)', tip: 'trosak', date: '2027-01', amount: 3000, ponavljanje: 'jednom', do: '', investitoru: 'pravilo'},
+    {id: 102, label: 'Bonus', tip: 'prihod', date: '2027-04', amount: 10000, ponavljanje: 'jednom', do: '', investitoru: 'pravilo'},
+    {id: 103, label: 'Kirija za godinu dana', tip: 'trosak', date: '2027-07', amount: 6000, ponavljanje: '12m', do: '', investitoru: 'pravilo'}
+  ]
+};
+// ── Faza 2: kredit ──
+let scAsOf = '2027-12';
+let scPhases = [{id: 202, label: 'Prva godina: 1.500 € mesečno', from: '2028-01', months: 12, extra: 1500, tip: 'ukupno', mode: 'rok'}];
+let scLumps = [{id: 201, label: 'Povrat PDV-a (prvi stan, 40 m²)', date: '2028-03', amount: 0, pdv: true, mode: 'rok'}];
+let scNextId = 200;
+let scStart = ymAdd(scPre.kredit, 1);   // prva rata = mesec posle podizanja kredita
+
+const PONAVLJANJE = {jednom: 'Jednom', mesecno: 'Svakog meseca', '6m': 'Svakih 6 meseci', '12m': 'Svake godine'};
+const INVESTITORU = {pravilo: 'Po pravilu', sve: 'Sve investitoru', nista: 'Ništa investitoru'};
+
+function eventHits(ev, ym){
+  if(!validYm(ev.date)) return false;
+  const d = ymDiff(ev.date, ym);
+  if(d < 0) return false;
+  if(validYm(ev.do) && ymDiff(ev.do, ym) > 0) return false;
+  if(ev.ponavljanje === 'mesecno') return true;
+  if(ev.ponavljanje === '6m') return d % 6 === 0;
+  if(ev.ponavljanje === '12m') return d % 12 === 0;
+  return d === 0;
+}
+
+// Povrat PDV-a za prvi stan: samo za kvadrate na koje kupac ima pravo (40 m² za kupca, +15 m² po članu domaćinstva)
+function pdvRefund(){
+  const pdv = Math.max(0, (+scPre.cena || 0) - (+scPre.cenaBezPdv || 0));
+  const a = +scPre.povrsina || 0, m = +scPre.pdvM2 || 0;
+  return Math.round(a > 0 ? pdv * Math.min(1, m / a) : pdv);
+}
+
+function simulatePre(p){
+  p = p || scPre;
+  const rows = [];
+  let paid = 0, cash = 0, minCash = 0, minCashYm = null;
+  const months = validYm(p.start) && validYm(p.kredit) ? Math.max(0, ymDiff(p.start, p.kredit)) : 0;
+  for(let i = 0; i < months; i++){
+    const ym = ymAdd(p.start, i);
+    let ruleIncome = 0, direct = 0, keep = 0, costs = 0;
+    const evs = [];
+    (p.dogadjaji || []).forEach(ev => {
+      if(!eventHits(ev, ym)) return;
+      const a = +ev.amount || 0;
+      evs.push({label: ev.label, amount: ev.tip === 'trosak' ? -a : a});
+      if(ev.tip === 'trosak') costs += a;
+      else if(ev.investitoru === 'sve') direct += a;
+      else if(ev.investitoru === 'nista') keep += a;
+      else ruleIncome += a;
+    });
+    const sharePct = i < (+p.prviMeseci || 0) ? (+p.prviPct || 0) : (+p.zatimPct || 0);
+    const net = (+p.plata || 0) - (+p.troskovi || 0) + ruleIncome - costs;
+    let toInv = net > 0 ? net * sharePct / 100 : 0;
+    cash += net - toInv;
+    if(cash < 0 && toInv > 0){ const t = Math.min(toInv, -cash); toInv -= t; cash += t; }   // manjak se prvo vraća iz sledeće uplate
+    toInv += direct; cash += keep;
+    if(i === 0){ toInv += Math.min(+p.odmah || 0, +p.gotovina || 0); cash += (+p.gotovina || 0) - Math.min(+p.odmah || 0, +p.gotovina || 0); }
+    if(paid + toInv > p.cena){ cash += paid + toInv - p.cena; toInv = Math.max(0, p.cena - paid); }   // ne plaća se više od cene
+    paid += toInv;
+    if(cash < minCash - 0.005){ minCash = cash; minCashYm = ym; }
+    rows.push({ym, i, sharePct, plata: +p.plata || 0, troskovi: +p.troskovi || 0, events: evs, net, toInv, paid, cash, preostalo: p.cena - paid});
+  }
+  return { rows, paid, cash, loan: Math.max(0, p.cena - Math.round(paid)), minCash, minCashYm, months, sharePaid: p.cena ? paid / p.cena * 100 : 0 };
+}
+
+// Iznos kredita = cena - uplaćeno investitoru. Upisuje se u Parametre (Vrednost stana, Učešće).
+function sbSyncParams(pre){
+  const c = document.getElementById('p-cena'), u = document.getElementById('p-ucesce');
+  const cv = sbNum(scPre.cena), uv = sbNum(pre.paid);
+  if(c && c.value !== cv) c.value = cv;
+  if(u && u.value !== uv) u.value = uv;
+  try{ recalcParams(); }catch(e){}
+}
+
+function scGetBase(){
+  const inp = getInputs();
+  return {
+    cena: inp.cena, ucesce: inp.ucesce, kredit: inp.kredit, kamata: inp.kamata, rok: inp.rok,
+    baseRata: Math.round(rataFn(inp.kredit, inp.kamata, inp.rok)),
+    totalMonths: Math.round(inp.rok * 12)
+  };
+}
+const scIdx = ym => ymDiff(scStart, ym) + 1;   // redni broj rate kredita za dati mesec (1 = prva rata)
+
+function addPhase(prefill){
+  const last = scPhases[scPhases.length-1];
+  const phase = prefill || {
+    id: scNextId++, label: 'Dopuna ' + (scPhases.length + 1),
+    from: last ? ymAdd(last.from, last.months) : scStart, months: 12, extra: 300, tip: 'dopuna', mode: 'rok'
+  };
+  if(!phase.id) phase.id = scNextId++;
+  if(!phase.mode) phase.mode = 'rok';
+  scPhases.push(phase);
+  renderScenario();
+}
+function addLump(prefill){
+  const lump = prefill || { id: scNextId++, label: 'Jednokratna uplata', date: scStart, amount: 5000, mode: 'rok' };
+  if(!lump.id) lump.id = scNextId++;
+  if(!lump.mode) lump.mode = 'rok';
+  scLumps.push(lump);
+  renderScenario();
+}
+function addPreEvent(){
+  scPre.dogadjaji.push({id: scNextId++, label: 'Novi događaj', tip: 'prihod', date: scPre.start, amount: 1000, ponavljanje: 'jednom', do: '', investitoru: 'pravilo'});
+  renderScenario();
+}
+function removePhase(id){ scPhases = scPhases.filter(p => p.id !== id); renderScenario(); }
+function removeLump(id){ scLumps = scLumps.filter(p => p.id !== id); renderScenario(); }
+function removePreEvent(id){ scPre.dogadjaji = scPre.dogadjaji.filter(p => p.id !== id); renderScenario(); }
+const TEXT_FIELDS = ['label','from','date','mode','tip','ponavljanje','do','investitoru','start','kredit'];
+function updatePhase(id, field, val){
+  const p = scPhases.find(p => p.id === id); if(!p) return;
+  p[field] = TEXT_FIELDS.includes(field) ? val : Math.max(0, +val || 0);
+  renderScenario();
+}
+function updateLump(id, field, val){
+  const p = scLumps.find(p => p.id === id); if(!p) return;
+  p[field] = TEXT_FIELDS.includes(field) ? val : Math.max(0, +val || 0);
+  renderScenario();
+}
+function updatePreEvent(id, field, val){
+  const p = scPre.dogadjaji.find(p => p.id === id); if(!p) return;
+  p[field] = TEXT_FIELDS.includes(field) ? val : Math.max(0, +val || 0);
+  renderScenario();
+}
+function updatePre(field, val){
+  if(TEXT_FIELDS.includes(field)){ if(!validYm(val)) return; scPre[field] = val; }
+  else scPre[field] = Math.max(0, +val || 0);
+  if(field === 'kredit'){ scStart = ymAdd(scPre.kredit, 1); }
+  renderScenario();
+}
+function setScAsOf(v){ if(validYm(v)){ scAsOf = v; renderScenario(); } }
+
+function simulateScenario(phases, lumps){
+  phases = phases || scPhases; lumps = lumps || scLumps;
+  const base = scGetBase();
+  const r = base.kamata / 100 / 12;
+  let bal = base.kredit, totalPaid = 0, month = 0;
+  const baseRata = base.baseRata;
+  const maxMonths = base.totalMonths * 2;
+  const phaseMap = {}, lumpMap = {};
+  phases.forEach(ph => {
+    if(!validYm(ph.from)) return;
+    const f = scIdx(ph.from);
+    for(let m = f; m < f + ph.months; m++) if(m >= 1) phaseMap[m] = ph;
+  });
+  lumps.forEach(l => { if(!validYm(l.date)) return; const m = scIdx(l.date); if(m >= 1) (lumpMap[m] = lumpMap[m] || []).push(l); });
+
+  let currentRata = rataFn(base.kredit, base.kamata, base.rok);   // bez zaokruživanja, da poslednja rata padne tačno na kraj roka
+  const recompute = () => { const rem = base.totalMonths - month; if(rem > 0 && bal > 0) currentRata = rataFn(bal, base.kamata, rem/12); };
+  const monthlyData = [];
+  while(bal > 0.5 && month < maxMonths){
+    month++;
+    const interest = bal * r;
+    const ph = phaseMap[month];
+    const rataBanke = currentRata;
+    const want = !ph ? currentRata : ph.tip === 'ukupno' ? Math.max(currentRata, +ph.extra || 0) : currentRata + (+ph.extra || 0);
+    const payment = Math.min(want, bal + interest);
+    const principal = payment - interest;
+    if(principal <= 0) break;
+    bal = Math.max(0, bal - principal);
+    totalPaid += payment;
+    let lumpSum = 0, needRecalc = false;
+    (lumpMap[month] || []).forEach(l => { const a = Math.min(+l.amount || 0, bal); bal -= a; lumpSum += a; totalPaid += a; if(l.mode === 'rata') needRecalc = true; });
+    // Smanji ratu: banka preračunava ratu posle svake uplate preko rate
+    if(ph && ph.mode === 'rata' && (payment - rataBanke > 0.5 || month === scIdx(ph.from) + ph.months - 1)) needRecalc = true;
+    if(needRecalc) recompute();
+    monthlyData.push({month, ym: ymAdd(scStart, month-1), bal, interest, principal, payment, rata: rataBanke, rataNext: currentRata, lump: lumpSum, phase: ph || null});
+  }
+  const baseInterest = baseRata * base.totalMonths - base.kredit;
+  const actualInterest = totalPaid - base.kredit;
+  return { monthlyData, month, endYm: ymAdd(scStart, Math.max(0, month-1)), totalPaid, actualInterest, baseInterest,
+    saving: baseInterest - actualInterest, savedMonths: base.totalMonths - month, baseRata, base };
+}
+function balAt(result, ym){
+  const i = scIdx(ym);
+  if(i < 1) return result.base.kredit;
+  if(i > result.monthlyData.length) return 0;
+  return result.monthlyData[i-1].bal;
+}
+
+const SC_COLORS = ['var(--accent)','#c2410c','#7c3aed','#0f766e','#b45309','#be185d'];
+
+// ── Prikaz: faza 1 ──
+function renderPreInputs(){
+  const el = document.getElementById('sc-pre-inputs'); if(!el) return;
+  const fid = document.activeElement ? document.activeElement.getAttribute('data-fid') : null;
+  const f = (label, field, val, type, extra) => `<label><span>${label}</span><input type="${type||'number'}" data-fid="pre-${field}" value="${val}" ${extra||''} onchange="updatePre('${field}',this.value)"></label>`;
+  el.innerHTML = `
+    <div class="sb-fields sb-fields-pre">
+      ${f('Cena stana sa PDV-om (€)', 'cena', scPre.cena, 'number', 'min="0" step="100"')}
+      ${f('Cena bez PDV-a (€)', 'cenaBezPdv', scPre.cenaBezPdv, 'number', 'min="0" step="100"')}
+      ${f('Prva uplata investitoru', 'start', scPre.start, 'month')}
+      ${f('Podizanje kredita (60% gradnje)', 'kredit', scPre.kredit, 'month')}
+      ${f('Gotovina na početku (€)', 'gotovina', scPre.gotovina, 'number', 'min="0" step="500"')}
+      ${f('Od toga odmah investitoru (€)', 'odmah', scPre.odmah, 'number', 'min="0" step="500"')}
+      ${f('Mesečna plata (€)', 'plata', scPre.plata, 'number', 'min="0" step="10"')}
+      ${f('Mesečni troškovi (€)', 'troskovi', scPre.troskovi, 'number', 'min="0" step="10"')}
+      ${f('Površina stana (m²)', 'povrsina', scPre.povrsina, 'number', 'min="0" step="0.01"')}
+      ${f('Povrat PDV-a za (m²)', 'pdvM2', scPre.pdvM2, 'number', 'min="0" step="1"')}
+      <div class="sb-calc"><span>Povrat PDV-a</span><b>${sbNum(pdvRefund())} €</b><small>${sbNum(scPre.cena - scPre.cenaBezPdv)} € × ${scPre.pdvM2} / ${String(scPre.povrsina).replace('.', ',')} m²</small></div>
+    </div>
+    <div class="sb-rule">
+      <span>Od ostatka plate investitoru ide</span>
+      <input type="number" min="0" max="100" data-fid="pre-prviPct" value="${scPre.prviPct}" onchange="updatePre('prviPct',this.value)" aria-label="Procenat u prvim mesecima"><span>% prvih</span>
+      <input type="number" min="0" data-fid="pre-prviMeseci" value="${scPre.prviMeseci}" onchange="updatePre('prviMeseci',this.value)" aria-label="Broj prvih meseci"><span>meseci, a posle toga</span>
+      <input type="number" min="0" max="100" data-fid="pre-zatimPct" value="${scPre.zatimPct}" onchange="updatePre('zatimPct',this.value)" aria-label="Procenat posle"><span>%.</span>
+    </div>`;
+  if(fid){ const x = el.querySelector('[data-fid="'+fid+'"]'); if(x) x.focus(); }
+}
+
+function renderPreEvents(){
+  const cont = document.getElementById('sc-pre-events'); if(!cont) return;
+  const fid = document.activeElement ? document.activeElement.getAttribute('data-fid') : null;
+  if(!scPre.dogadjaji.length){ cont.innerHTML = '<div class="sb-empty">Nema događaja. Dodaj bonus, kiriju ili drugi veći prihod ili trošak.</div>'; return; }
+  const opt = (map, v) => Object.entries(map).map(([k, t]) => `<option value="${k}" ${v===k?'selected':''}>${t}</option>`).join('');
+  cont.innerHTML = [...scPre.dogadjaji].sort((a, b) => (a.date||'').localeCompare(b.date||'')).map(ev => `
+    <div class="sb-row" style="--row-c:${ev.tip === 'trosak' ? 'var(--risk)' : 'var(--safe)'}">
+      <div class="sb-fields sb-fields-ev">
+        <label class="span2"><span>Naziv</span><input data-fid="evl-${ev.id}" value="${sbEsc(ev.label)}" onchange="updatePreEvent(${ev.id},'label',this.value)"></label>
+        <label><span>Vrsta</span><select data-fid="evt-${ev.id}" onchange="updatePreEvent(${ev.id},'tip',this.value)"><option value="prihod" ${ev.tip==='prihod'?'selected':''}>Prihod</option><option value="trosak" ${ev.tip==='trosak'?'selected':''}>Trošak</option></select></label>
+        <label><span>Iznos (€)</span><input type="number" min="0" step="100" data-fid="eva-${ev.id}" value="${ev.amount}" onchange="updatePreEvent(${ev.id},'amount',this.value)"></label>
+        <label><span>Mesec</span><input type="month" data-fid="evd-${ev.id}" value="${ev.date||''}" onchange="updatePreEvent(${ev.id},'date',this.value)"></label>
+        <label><span>Ponavlja se</span><select data-fid="evp-${ev.id}" onchange="updatePreEvent(${ev.id},'ponavljanje',this.value)">${opt(PONAVLJANJE, ev.ponavljanje)}</select></label>
+        <label><span>Do meseca (opciono)</span><input type="month" data-fid="evdo-${ev.id}" value="${ev.do||''}" ${ev.ponavljanje==='jednom'?'disabled':''} onchange="updatePreEvent(${ev.id},'do',this.value)"></label>
+        <label><span>Ide investitoru</span><select data-fid="evi-${ev.id}" ${ev.tip==='trosak'?'disabled':''} onchange="updatePreEvent(${ev.id},'investitoru',this.value)">${opt(INVESTITORU, ev.investitoru)}</select></label>
+      </div>
+      <div class="sb-row-foot"><span class="sb-range">${ev.tip === 'trosak' ? 'Trošak' : 'Prihod'} ${sbNum(ev.amount)} € · ${PONAVLJANJE[ev.ponavljanje] ? PONAVLJANJE[ev.ponavljanje].toLowerCase() : ''} od ${ymFmt(ev.date)}</span>
+        <button type="button" class="sb-remove" onclick="removePreEvent(${ev.id})">Ukloni</button></div>
+    </div>`).join('');
+  if(fid){ const x = cont.querySelector('[data-fid="'+fid+'"]'); if(x) x.focus(); }
+}
+
+function renderPreResults(pre){
+  const el = document.getElementById('sc-pre-results'); if(!el) return;
+  const warn = pre.minCash < -0.5 ? `<p class="sb-warn">U ${ymFmt(pre.minCashYm)} nedostaje ${sbNum(-pre.minCash)} € gotovine. Smanji uplatu investitoru tog meseca ili zadrži deo početne gotovine.</p>` : '';
+  const tr = pre.rows.map(r => `<tr class="${r.ym === scAsOf ? 'is-asof' : ''}${r.events.length ? ' has-lump' : ''}">
+      <td>${ymFmt(r.ym)}</td>
+      <td class="n">${sbNum(r.plata - r.troskovi)}</td>
+      <td>${r.events.map(e => `${sbEsc(e.label)} <span class="${e.amount < 0 ? 'sb-neg' : 'sb-pos'}">${e.amount < 0 ? '-' : '+'}${sbNum(Math.abs(e.amount))}</span>`).join('<br>')}${r.i === 0 && scPre.odmah ? `${r.events.length ? '<br>' : ''}Početna gotovina <span class="sb-pos">+${sbNum(scPre.gotovina)}</span>` : ''}</td>
+      <td class="n">${r.sharePct}%</td>
+      <td class="n"><b>${sbNum(r.toInv)}</b></td>
+      <td class="n">${sbNum(r.paid)}</td>
+      <td class="n ${r.cash < -0.5 ? 'sb-neg' : ''}">${sbNum(r.cash)}</td>
+      <td class="n muted">${sbNum(r.preostalo)}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+  <div class="sb-metrics">
+    <div><span>Uplaćeno investitoru</span><b>${sbNum(pre.paid)} €</b><small>${pre.sharePaid.toFixed(1)}% cene, do ${ymFmt(ymAdd(scPre.kredit, -1))}</small></div>
+    <div><span>Iznos kredita</span><b>${sbNum(pre.loan)} €</b><small>podiže se u ${ymFmt(scPre.kredit)}</small></div>
+    <div><span>Gotovina kod tebe</span><b>${sbNum(pre.cash)} €</b><small>na dan podizanja kredita</small></div>
+    <div><span>Cena</span><b>${sbNum(scPre.cena)} €</b><small>bez PDV-a ${sbNum(scPre.cenaBezPdv)} €, PDV ${sbNum(scPre.cena - scPre.cenaBezPdv)} €</small></div>
+  </div>
+  ${warn}
+  <div class="sb-table-wrap">
+    <table class="sb-table">
+      <thead><tr><th>Mesec</th><th class="n">Plata minus troškovi</th><th>Događaji</th><th class="n">Pravilo</th><th class="n">Investitoru</th><th class="n">Ukupno uplaćeno</th><th class="n">Gotovina kod tebe</th><th class="n">Preostalo do cene</th></tr></thead>
+      <tbody>${tr}</tbody>
+    </table>
+  </div>`;
+}
+
+// ── Prikaz: zajedničko ──
+function renderScenarioBaseline(){
+  const base = scGetBase();
+  const el = document.getElementById('sc-baseline-row'); if(!el) return;
+  el.innerHTML = `
+    <div class="sb-chip">Kredit <b>${fmt(base.kredit)}</b></div>
+    <div class="sb-chip">Prva rata <b>${ymFmt(scStart)}</b></div>
+    <div class="sb-chip">Kamata <b>${base.kamata}%</b></div>
+    <div class="sb-chip">Rok <b>${base.rok} god</b></div>
+    <div class="sb-chip">Redovna rata <b>${fmt(base.baseRata)}</b></div>
+    <span class="sb-chip-note">Kamata i rok se menjaju u tabu Parametri.</span>`;
+}
+
+function renderScenarioAnswer(pre, result, plain){
+  const el = document.getElementById('sc-answer'); if(!el) return;
+  let label, num, meta;
+  const preRow = pre.rows.find(r => r.ym === scAsOf);
+  if(validYm(scAsOf) && ymDiff(scAsOf, scPre.kredit) > 0){
+    const r = preRow || (ymDiff(scAsOf, scPre.start) < 0 ? null : pre.rows[pre.rows.length-1]);
+    const paid = r ? r.paid : 0, cash = r ? r.cash : 0;
+    label = 'Preostalo za uplatu investitoru na kraju meseca';
+    num = sbNum(scPre.cena - paid) + ' €';
+    meta = `<span>Uplaćeno investitoru <b>${sbNum(paid)} €</b> (${(paid / scPre.cena * 100).toFixed(1)}%)</span><span>Gotovina kod tebe <b>${sbNum(cash)} €</b></span><span>Kredit u ${ymFmt(scPre.kredit)}: <b>${sbNum(pre.loan)} €</b></span>`;
+  } else {
+    const bal = balAt(result, scAsOf), balPlain = balAt(plain, scAsOf), diff = balPlain - bal;
+    label = scAsOf === scPre.kredit ? 'Dug banci posle podizanja kredita' : 'Dug banci na kraju meseca';
+    num = fmt(bal);
+    const md = result.monthlyData[scIdx(scAsOf) - 1];
+    const rataTxt = md ? `<span>Rata banke <b>${fmt(md.rata)}</b>${Math.abs(md.payment - md.rata) > 0.5 ? `, plaćaš <b>${fmt(md.payment)}</b>` : ''}</span>` : '';
+    meta = rataTxt + `<span>Otplaćeno <b>${(result.base.kredit ? (1 - bal / result.base.kredit) * 100 : 0).toFixed(1)}%</b> kredita</span>` +
+      (scPhases.length || scLumps.length ? `<span>Bez dodatnih uplata bi bilo <b>${fmt(balPlain)}</b></span>${diff > 0.5 ? `<span class="sb-good">Manje za <b>${fmt(diff)}</b></span>` : ''}` : '') +
+      `<span>Kredit otplaćen <b>${ymFmt(result.endYm)}</b></span>`;
+  }
+  el.innerHTML = `
+    <div class="sb-answer-q">
+      <label for="sc-asof">${label}</label>
+      <input type="month" id="sc-asof" value="${scAsOf}" onchange="setScAsOf(this.value)">
+    </div>
+    <div class="sb-answer-num">${num}</div>
+    <div class="sb-answer-meta">${meta}</div>`;
+}
+
+function renderScenarioTimeline(pre, result){
+  const tl = document.getElementById('sc-timeline'); if(!tl) return;
+  const origin = scPre.start;
+  const total = Math.max(1, ymDiff(origin, result.endYm) + 1);
+  const pos = ym => Math.max(0, Math.min(100, ymDiff(origin, ym) / total * 100));
+  const preSeg = `<div class="sb-tl-seg sb-tl-pre" style="left:0;width:${pos(scPre.kredit)}%" title="Uplate investitoru: ${ymFmt(scPre.start)} do ${ymFmt(ymAdd(scPre.kredit,-1))}"></div>`;
+  const segs = scPhases.map((ph, i) => {
+    if(!validYm(ph.from)) return '';
+    return `<div class="sb-tl-seg" style="left:${pos(ph.from)}%;width:${Math.max(0, pos(ymAdd(ph.from, ph.months)) - pos(ph.from))}%;background:${SC_COLORS[i % SC_COLORS.length]}" title="${sbEsc(ph.label)}"></div>`;
+  }).join('');
+  const marks = scLumps.filter(l => validYm(l.date)).map(l => `<div class="sb-tl-mark" style="left:${pos(l.date)}%" title="${sbEsc(l.label)}: ${fmt(l.amount)} u ${ymFmt(l.date)}"></div>`).join('');
+  const credit = `<div class="sb-tl-credit" style="left:${pos(scPre.kredit)}%" title="Kredit u ${ymFmt(scPre.kredit)}"></div>`;
+  const asMark = validYm(scAsOf) && ymDiff(origin, scAsOf) >= 0 ? `<div class="sb-tl-asof" style="left:${pos(scAsOf)}%"></div>` : '';
+  tl.innerHTML = `
+    <div class="sb-tl-labels"><span>Prva uplata <b>${ymFmt(scPre.start)}</b></span><span>Kredit <b>${ymFmt(scPre.kredit)}</b></span><span>Kredit otplaćen <b>${ymFmt(result.endYm)}</b></span></div>
+    <div class="sb-tl-bar">${preSeg}${segs}${marks}${credit}${asMark}</div>
+    <div class="sb-tl-legend"><span><i class="lg-pre"></i>uplate investitoru</span><span><i class="lg-phase"></i>dopune kredita</span><span><i class="lg-lump"></i>jednokratne uplate</span><span><i class="lg-asof"></i>izabrani mesec</span></div>`;
+}
+
+function modeToggle(kind, id, mode){
+  return `<div class="sb-toggle" role="group" aria-label="Posle uplate">
+    <button type="button" class="${mode==='rok'?'on':''}" onclick="${kind}(${id},'mode','rok')">Skrati rok</button>
+    <button type="button" class="${mode==='rata'?'on':''}" onclick="${kind}(${id},'mode','rata')">Smanji ratu</button></div>`;
+}
+
+// Isti scenario, ali sa drugim izborom (Skrati rok / Smanji ratu) za jednu fazu ili uplatu
+function scAlt(kind, id){
+  const flip = x => x.id === id ? {...x, mode: x.mode === 'rata' ? 'rok' : 'rata'} : x;
+  return kind === 'phase' ? simulateScenario(scPhases.map(flip), scLumps) : simulateScenario(scPhases, scLumps.map(flip));
+}
+function scModeCompare(result, kind, item, endYm){
+  const alt = scAlt(kind, item.id);
+  const rk = item.mode === 'rata' ? alt : result, rt = item.mode === 'rata' ? result : alt;
+  const i = scIdx(endYm) - 1, a = rk.monthlyData[i], b = rt.monthlyData[i];
+  if(!a || !b) return '';
+  const next = ymFmt(ymAdd(endYm, 1));
+  const on = m => item.mode === m ? ' is-on' : '';
+  return `<div class="sb-compare">
+    <div class="sb-cmp${on('rok')}"><span>Skrati rok</span>rata ostaje <b>${fmt(a.rataNext)}</b>, kredit otplaćen <b>${ymFmt(rk.endYm)}</b></div>
+    <div class="sb-cmp${on('rata')}"><span>Smanji ratu</span>${kind === 'phase' ? 'rata se smanjuje posle svake uplate, od ' + next + ' je' : 'od ' + next + ' rata'} <b>${fmt(b.rataNext)}</b>, kredit otplaćen <b>${ymFmt(rt.endYm)}</b></div>
+  </div>`;
+}
+
+function renderPhaseCards(result){
+  const cont = document.getElementById('sc-phases'); if(!cont) return;
+  const focusedId = document.activeElement ? document.activeElement.getAttribute('data-fid') : null;
+  if(scPhases.length === 0){
+    cont.innerHTML = `<div class="sb-empty">Nema mesečnih dopuna kredita. Dodaj fazu, npr. „od ${ymFmt(scStart)}, 24 meseca, 500 € mesečno“.</div>`;
+    return;
+  }
+  cont.innerHTML = scPhases.map((ph, i) => {
+    const endYm = validYm(ph.from) ? ymAdd(ph.from, ph.months - 1) : null;
+    let outcome = '';
+    if(endYm){
+      if(scIdx(ph.from) < 1) outcome = `<span class="sb-neg">Počinje pre prve rate (${ymFmt(scStart)})</span>`;
+      const d = result.monthlyData[scIdx(endYm) - 1];
+      if(d && !outcome) outcome = `Dug na kraju faze: <b>${fmt(d.bal)}</b>`;
+    }
+    return `
+    <div class="sb-row" style="--row-c:${SC_COLORS[i % SC_COLORS.length]}">
+      <div class="sb-fields sb-fields-phase">
+        <label><span>Naziv</span><input data-fid="lbl-${ph.id}" value="${sbEsc(ph.label)}" onchange="updatePhase(${ph.id},'label',this.value)"></label>
+        <label><span>Od meseca</span><input type="month" data-fid="from-${ph.id}" value="${ph.from||''}" onchange="updatePhase(${ph.id},'from',this.value)"></label>
+        <label><span>Trajanje (meseci)</span><input type="number" min="1" data-fid="dur-${ph.id}" value="${ph.months}" onchange="updatePhase(${ph.id},'months',this.value)"></label>
+        <label><span>${ph.tip === 'ukupno' ? 'Plaćam ukupno mesečno (€)' : 'Dopuna mesečno (€)'}</span><input type="number" min="0" step="50" data-fid="ext-${ph.id}" value="${ph.extra}" onchange="updatePhase(${ph.id},'extra',this.value)"></label>
+      </div>
+      <div class="sb-row-foot">
+        <div class="sb-toggle" role="group" aria-label="Vrsta iznosa">
+          <button type="button" class="${ph.tip !== 'ukupno' ? 'on' : ''}" onclick="updatePhase(${ph.id},'tip','dopuna')">Preko rate</button>
+          <button type="button" class="${ph.tip === 'ukupno' ? 'on' : ''}" onclick="updatePhase(${ph.id},'tip','ukupno')">Ukupno mesečno</button></div>
+        <span class="sb-range">${endYm ? ymFmt(ph.from) + ' do ' + ymFmt(endYm) : 'izaberi mesec'} · ${ph.tip === 'ukupno' ? 'bez obzira na ratu, uplata ' + fmt(ph.extra) + ' mesečno' : 'ukupno ' + fmt(ph.extra * ph.months)}</span>
+        ${modeToggle('updatePhase', ph.id, ph.mode)}
+        <span class="sb-outcome">${outcome}</span>
+        <button type="button" class="sb-remove" onclick="removePhase(${ph.id})" aria-label="Ukloni fazu">Ukloni</button>
+      </div>
+      ${endYm && scIdx(ph.from) >= 1 ? scModeCompare(result, 'phase', ph, endYm) : ''}
+    </div>`;
+  }).join('');
+  if(focusedId){ const el = cont.querySelector('[data-fid="'+focusedId+'"]'); if(el) el.focus(); }
+}
+
+function renderLumps(result){
+  const cont = document.getElementById('sc-lumps'); if(!cont) return;
+  const focusedId = document.activeElement ? document.activeElement.getAttribute('data-fid') : null;
+  if(scLumps.length === 0){
+    cont.innerHTML = '<div class="sb-empty">Nema jednokratnih uplata na kredit. Dodaj npr. bonus ili povrat PDV-a posle podizanja kredita.</div>';
+    return;
+  }
+  const sorted = [...scLumps].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  cont.innerHTML = sorted.map(l => {
+    const d = validYm(l.date) ? result.monthlyData[scIdx(l.date) - 1] : null;
+    const outcome = !validYm(l.date) ? '' : scIdx(l.date) < 1 ? `<span class="sb-neg">Pre prve rate. Uplatu pre kredita dodaj kao događaj u delu Do kredita.</span>` : d ? `Dug posle uplate: <b>${fmt(d.bal)}</b>` : 'Kredit je već otplaćen';
+    return `
+    <div class="sb-row sb-row-lump">
+      <div class="sb-fields sb-fields-lump">
+        <label><span>Naziv</span><input data-fid="llbl-${l.id}" value="${sbEsc(l.label)}" onchange="updateLump(${l.id},'label',this.value)"></label>
+        <label><span>Mesec</span><input type="month" data-fid="ldate-${l.id}" value="${l.date||''}" onchange="updateLump(${l.id},'date',this.value)"></label>
+        <label><span>Iznos (€)${l.pdv ? ', iz površine' : ''}</span><input type="number" min="0" step="500" data-fid="lamt-${l.id}" value="${l.amount}" ${l.pdv ? 'readonly class="auto-field" title="Računa se iz cene i površine u delu Do kredita"' : ''} onchange="updateLump(${l.id},'amount',this.value)"></label>
+      </div>
+      <div class="sb-row-foot">
+        ${modeToggle('updateLump', l.id, l.mode)}
+        <span class="sb-outcome">${outcome}</span>
+        <button type="button" class="sb-remove" onclick="removeLump(${l.id})" aria-label="Ukloni uplatu">Ukloni</button>
+      </div>
+      ${d ? scModeCompare(result, 'lump', l, l.date) : ''}
+    </div>`;
+  }).join('');
+  if(focusedId){ const el = cont.querySelector('[data-fid="'+focusedId+'"]'); if(el) el.focus(); }
+}
+
+function renderScenarioResults(result, plain){
+  const el = document.getElementById('sc-results'); if(!el) return;
+  const hasExtra = scPhases.length || scLumps.length;
+  const saving = hasExtra ? Math.max(0, plain.actualInterest - result.actualInterest) : 0;
+  const md = result.monthlyData;
+  const rows = md.filter((d, i) => d.ym.endsWith('-12') || d.lump > 0 || d.month === 1 || d.month === result.month
+    || (i > 0 && (Math.abs(d.rata - md[i-1].rata) > 0.5 || Math.abs(d.payment - md[i-1].payment) > 0.5)));
+  const tr = rows.map(d => `<tr class="${d.ym === scAsOf ? 'is-asof' : ''}${d.lump > 0 ? ' has-lump' : ''}">
+      <td>${ymFmt(d.ym)}</td>
+      <td class="n">${fmt(d.rata)}</td>
+      <td class="n">${fmt(d.payment)}</td>
+      <td class="n">${d.lump > 0 ? fmt(d.lump) : ''}</td>
+      <td class="n"><b>${fmt(d.bal)}</b></td>
+      ${hasExtra ? `<td class="n muted">${fmt(balAt(plain, d.ym))}</td>` : ''}
+    </tr>`).join('');
+  el.innerHTML = `
+  <div class="sb-metrics">
+    <div><span>Kredit otplaćen</span><b>${ymFmt(result.endYm)}</b><small>${hasExtra ? 'umesto ' + ymFmt(plain.endYm) : result.month + ' rata'}</small></div>
+    <div><span>Rata banke</span><b>${fmt(result.baseRata)}</b><small>${(() => { const ch = md.find((d, i) => i > 0 && Math.abs(d.rata - md[i-1].rata) > 0.5); return ch ? 'od ' + ymFmt(ch.ym) + ' nova rata ' + fmt(ch.rata) : 'prva rata ' + ymFmt(scStart); })()}</small></div>
+    <div><span>Ušteda na kamati</span><b class="${saving > 0.5 ? 'sb-good' : ''}">${fmt(saving)}</b><small>od dopuna i jednokratnih uplata</small></div>
+    <div><span>Ukupna kamata</span><b>${fmt(result.actualInterest)}</b><small>${hasExtra ? 'umesto ' + fmt(plain.actualInterest) : 'za ceo rok'}</small></div>
+  </div>
+  <div class="sb-table-wrap">
+    <table class="sb-table">
+      <thead><tr><th>Mesec</th><th class="n">Rata banke</th><th class="n">Uplaćeno</th><th class="n">Jednokratno</th><th class="n">Dug posle</th>${hasExtra ? '<th class="n">Bez dopuna</th>' : ''}</tr></thead>
+      <tbody>${tr}</tbody>
+    </table>
+  </div>
+  <p class="sb-note">Tabela prikazuje prvu ratu, decembar svake godine, jednokratne uplate i svaki mesec u kom se menja rata ili uplata.</p>`;
+}
+
+function renderScenario(){
+  scStart = ymAdd(scPre.kredit, 1);
+  scLumps.forEach(l => { if(l.pdv) l.amount = pdvRefund(); });
+  const pre = simulatePre();
+  sbSyncParams(pre);
+  renderPreInputs();
+  renderPreEvents();
+  renderPreResults(pre);
+  renderScenarioBaseline();
+  const result = simulateScenario();
+  const plain = simulateScenario([], []);
+  renderScenarioAnswer(pre, result, plain);
+  renderScenarioTimeline(pre, result);
+  renderPhaseCards(result);
+  renderLumps(result);
+  renderScenarioResults(result, plain);
+  renderLedger();
+  if(typeof sbMarkDirty === 'function') sbMarkDirty();
+}
+
+function sbChatState(){
+  const pre = simulatePre(), result = simulateScenario(), plain = simulateScenario([], []);
+  const preRow = pre.rows.find(r => r.ym === scAsOf);
+  return {
+    doKredita: {
+      cenaSaPdv: scPre.cena, cenaBezPdv: scPre.cenaBezPdv, prvaUplata: scPre.start, podizanjeKredita: scPre.kredit,
+      gotovinaNaPocetku: scPre.gotovina, odmahInvestitoru: scPre.odmah, mesecnaPlata: scPre.plata, mesecniTroskovi: scPre.troskovi,
+      pravilo: `${scPre.prviPct}% ostatka prvih ${scPre.prviMeseci} meseci, zatim ${scPre.zatimPct}%`,
+      dogadjaji: scPre.dogadjaji.map(e => ({label: e.label, tip: e.tip, date: e.date, amount: e.amount, ponavljanje: e.ponavljanje, do: e.do || null, investitoru: e.investitoru})),
+      uplacenoInvestitoru: Math.round(pre.paid), iznosKredita: Math.round(pre.loan), gotovinaNaDanKredita: Math.round(pre.cash),
+      poMesecima: pre.rows.map(r => ({mesec: r.ym, investitoru: Math.round(r.toInv), ukupnoUplaceno: Math.round(r.paid), gotovina: Math.round(r.cash)}))
+    },
+    kredit: {
+      prvaRata: scStart, izabraniMesec: scAsOf,
+      dugBanciNaIzabraniMesec: ymDiff(scAsOf, scPre.kredit) > 0 ? null : Math.round(balAt(result, scAsOf)),
+      preostaloInvestitoruNaIzabraniMesec: preRow ? Math.round(scPre.cena - preRow.paid) : null,
+      kreditOtplacen: result.endYm, ustedaKamata: Math.round(Math.max(0, plain.actualInterest - result.actualInterest)),
+      faze: scPhases.map(p => ({label: p.label, from: p.from, months: p.months, extra: p.extra, tip: p.tip || 'dopuna', mode: p.mode})),
+      povratPdv: pdvRefund(),
+      uplate: scLumps.map(l => ({label: l.label, date: l.date, amount: l.amount, mode: l.mode}))
+    }
+  };
+}
+
+// Poziva ga chat kada predloži scenario
+function applyScenarioFromChat(phases, lumps){
+  if(Array.isArray(phases)){
+    scPhases = phases.map(ph => {
+      let from = ph.from;
+      if(!validYm(from) && ph.fromMonth) from = ymAdd(scStart, (+ph.fromMonth || 1) - 1);
+      return {id: scNextId++, label: ph.label || 'Dopuna', from: from || scStart, months: +ph.months || 12, extra: +ph.extra || 0, tip: ph.tip === 'ukupno' ? 'ukupno' : 'dopuna', mode: ph.mode === 'rata' ? 'rata' : 'rok'};
+    });
+  }
+  if(Array.isArray(lumps)){
+    scLumps = lumps.map(l => ({id: scNextId++, label: l.label || 'Uplata', date: validYm(l.date) ? l.date : scStart, amount: +l.amount || 0, mode: l.mode === 'rata' ? 'rata' : 'rok'}));
+  }
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(x => x.classList.toggle('active', x.textContent === 'Scenario otplate'));
+  document.getElementById('tab-scenario').classList.add('active');
+  renderScenario();
+}
+
+
+// Poziva ga chat kada menja deo "Do kredita"
+const PRE_NUM = ['cena','cenaBezPdv','povrsina','pdvM2','gotovina','odmah','plata','troskovi','prviMeseci','prviPct','zatimPct'];
+function applyPreFromChat(d){
+  if(!d || typeof d !== 'object') return;
+  PRE_NUM.forEach(k => { if(d[k] !== undefined && isFinite(+d[k])) scPre[k] = Math.max(0, +d[k]); });
+  ['start','kredit'].forEach(k => { if(validYm(d[k])) scPre[k] = d[k]; });
+  if(Array.isArray(d.dogadjaji)){
+    scPre.dogadjaji = d.dogadjaji.filter(e => validYm(e.date)).map(e => ({
+      id: scNextId++, label: e.label || 'Događaj', tip: e.tip === 'trosak' ? 'trosak' : 'prihod', date: e.date, amount: Math.max(0, +e.amount || 0),
+      ponavljanje: PONAVLJANJE[e.ponavljanje] ? e.ponavljanje : 'jednom', do: validYm(e.do) ? e.do : '', investitoru: INVESTITORU[e.investitoru] ? e.investitoru : 'pravilo'
+    }));
+  }
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(x => x.classList.toggle('active', x.textContent === 'Scenario otplate'));
+  document.getElementById('tab-scenario').classList.add('active');
+  renderScenario();
+}
+
+// ══ DNEVNIK: po mesecima koliko je uplaćeno investitoru ili banci, rata i dug ══
+function buildLedger(){
+  const pre = simulatePre(), res = simulateScenario();
+  const preRows = [], loanRows = [];
+  const eur = v => sbNum(v) + ' €';
+  pre.rows.forEach(r => {
+    const notes = [];
+    if(r.i === 0 && scPre.gotovina) notes.push({t: `Početna gotovina ${eur(scPre.gotovina)}`, key: true});
+    r.events.forEach(e => notes.push({t: `${e.label} ${e.amount < 0 ? '−' : '+'}${eur(Math.abs(e.amount))}`, key: e.amount > 0}));
+    if(r.cash < -0.5) notes.push({t: `Nedostaje ${eur(-r.cash)} gotovine`});
+    if(!notes.length) notes.push({t: `Redovna uplata, ${r.sharePct}% ostatka plate`, plain: true});
+    preRows.push({when: ymFmt(r.ym), ym: r.ym, notes, paid: r.toInv, key: notes.some(n => n.key)});
+  });
+  const md = res.monthlyData;
+  let run = null;
+  const flush = () => { if(run){ loanRows.push(run); run = null; } };
+  md.forEach((d, i) => {
+    const prev = md[i-1];
+    const over = d.payment - d.rata;
+    const changed = !prev || d.lump > 0 || over > 0.5 || Math.abs(d.rata - prev.rata) > 0.5 || i === md.length - 1;
+    if(changed){
+      flush();
+      const notes = [];
+      scLumps.filter(l => validYm(l.date) && l.date === d.ym).forEach(l => notes.push({t: `${l.pdv ? 'Povrat PDV-a' : l.label} ${eur(l.amount)} uplaćen na kredit`, key: true}));
+      if(over > 0.5) notes.push({t: `Preko rate ${eur(over)}`, over: true});
+      if(i === md.length - 1) notes.push({t: 'Poslednja rata, kredit otplaćen', key: true});
+      if(!notes.length) notes.push({t: 'Redovna rata', plain: true});
+      loanRows.push({when: ymFmt(d.ym), ym: d.ym, notes, paid: d.payment + d.lump, rata: d.rata, dug: d.bal, key: notes.some(n => n.key)});
+    } else {
+      const y = d.ym.slice(0, 4);
+      if(run && run.year !== y) flush();
+      if(!run) run = {run: true, from: d.ym, year: y, n: 0, paid: 0, rata: d.rata, ym: d.ym};
+      run.to = d.ym; run.n++; run.paid += d.payment; run.dug = d.bal;
+    }
+  });
+  flush();
+  loanRows.forEach(r => { if(r.run){ r.when = r.n === 12 ? r.year : (r.from === r.to ? ymFmt(r.from) : `${ymFmt(r.from)} do ${ymFmt(r.to)}`); r.notes = [{t: `${r.n} ${r.n === 1 ? 'rata' : r.n < 5 ? 'rate' : 'rata'} po ${fmt(r.rata)}`, plain: true}]; } });
+  return {preRows, loanRows, pre, res};
+}
+
+function renderLedger(){
+  const el = document.getElementById('ledger'); if(!el) return;
+  const {preRows, loanRows, pre, res} = buildLedger();
+  const eur = v => sbNum(v) + ' €';
+  const notes = r => r.notes.map(n => `<span class="${n.key ? 'lg-key' : n.over ? 'lg-over' : n.plain ? 'lg-plain' : ''}">${sbEsc(n.t)}</span>`).join('');
+  const cls = r => [r.key ? 'is-key' : '', r.run ? 'is-run' : '', r.ym === scAsOf ? 'is-asof' : ''].join(' ').trim();
+  const preHtml = preRows.map(r => `<tr class="${cls(r)}"><td class="lg-when">${r.when}</td><td class="lg-what">${notes(r)}</td><td class="n">${eur(r.paid)}</td></tr>`).join('');
+  const loanHtml = loanRows.map(r => `<tr class="${cls(r)}"><td class="lg-when">${r.when}</td><td class="lg-what">${notes(r)}</td><td class="n">${eur(r.paid)}</td><td class="n">${fmt(r.rata)}</td><td class="n lg-dim">${fmt(r.dug)}</td></tr>`).join('');
+  el.innerHTML = `
+  <section class="lg-sec">
+    <header><h3>Uplate investitoru</h3><p>${ymFmt(scPre.start)} do ${ymFmt(ymAdd(scPre.kredit, -1))}, ukupno ${eur(pre.paid)}</p></header>
+    <table class="lg-table lg-pre"><thead><tr><th>Mesec</th><th>Opis</th><th class="n">Uplaćeno</th></tr></thead><tbody>${preHtml}</tbody></table>
+  </section>
+  <div class="lg-milestone"><span>${ymFmt(scPre.kredit)}</span><b>Banka isplaćuje kredit od ${eur(pre.loan)}</b><em>Stan je isplaćen u celosti, prva rata je u ${ymFmt(scStart)}.</em></div>
+  <section class="lg-sec">
+    <header><h3>Uplate banci</h3><p>${ymFmt(scStart)} do ${ymFmt(res.endYm)}, ukupno ${eur(res.totalPaid)}, od toga kamata ${eur(res.actualInterest)}</p></header>
+    <table class="lg-table lg-loan"><thead><tr><th>Mesec</th><th>Opis</th><th class="n">Uplaćeno</th><th class="n">Rata</th><th class="n">Dug banci</th></tr></thead><tbody>${loanHtml}</tbody></table>
+  </section>`;
+}
+
+// ══════════════════════════════════════════
+// INKREMENT TAB
+// ══════════════════════════════════════════
+let inkSubTab='kamata';
+const inkIncrements={kamata:-0.1, ucesce:1000, rata:10, rok:-1};
+
+function setInkSubTab(tab,btn){
+  inkSubTab=tab;
+  document.querySelectorAll('#inkSubTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderInkrement();
+}
+
+function getBaseParams(){
+  return{
+    cena: num('p-cena')||200000,
+    ucesce: num('p-ucesce')||40000,
+    kamata: parseFloat(document.getElementById('p-kamata').value)||4.5,
+    rok: parseFloat(document.getElementById('p-rok').value)||15,
+  };
+}
+
+function inkPMT(k,i,r){const m=i/100/12,n=Math.round(r*12);if(m===0||n===0)return 0;return k*(m*Math.pow(1+m,n))/(Math.pow(1+m,n)-1);}
+function inkMaxKredit(rata,i,r){const m=i/100/12,n=Math.round(r*12);if(m===0)return rata*n;return rata*(Math.pow(1+m,n)-1)/(m*Math.pow(1+m,n));}
+function inkRok(k,i,rata){const m=i/100/12;if(m===0)return rata>0?k/rata/12:0;const v=1-k*m/rata;if(v<=0)return 0;return -Math.log(v)/Math.log(1+m)/12;}
+
+function renderInkrement(){
+  const b=getBaseParams();
+  b.kredit=b.cena-b.ucesce;
+  b.rata=Math.round(inkPMT(b.kredit,b.kamata,b.rok));
+
+  // Fill base panel
+  document.getElementById('ib-cena').value=fmt(b.cena);
+  document.getElementById('ib-ucesce').value=fmt(b.ucesce);
+  document.getElementById('ib-kredit').value=fmt(b.kredit);
+  document.getElementById('ib-kamata').value=b.kamata.toFixed(1)+'%';
+  document.getElementById('ib-rok').value=b.rok+' god';
+  document.getElementById('ib-rata').value=fmt(b.rata);
+
+  // Determine inkrement values
+  const inc=inkIncrements[inkSubTab];
+  const ink={...b};
+
+  // Unlock/lock fields in inkrement panel
+  const iiFields=['ii-cena','ii-ucesce','ii-kamata','ii-rok','ii-rata'];
+  iiFields.forEach(id=>{
+    const el=document.getElementById(id);
+    el.readOnly=true;el.classList.add('auto-field');
+  });
+
+  // Apply base values to inkrement panel first (cena always same)
+  document.getElementById('ii-cena').value=fmt(b.cena);
+  document.getElementById('ii-ucesce').value=fmt(b.ucesce);
+  document.getElementById('ii-kamata').value=b.kamata.toFixed(1)+'%';
+  document.getElementById('ii-rok').value=b.rok+' god';
+
+  // Apply the increment to the active parameter
+  switch(inkSubTab){
+    case'kamata': ink.kamata=b.kamata+inc; break;
+    case'ucesce': ink.ucesce=b.ucesce+inc; ink.kredit=ink.cena-ink.ucesce; break;
+    case'rata': ink.rata=b.rata+inc; break;
+    case'rok': ink.rok=b.rok+inc; break;
+  }
+
+  // Set the changed parameter in inkrement panel and highlight it
+  switch(inkSubTab){
+    case'kamata':
+      document.getElementById('ii-kamata').value=ink.kamata.toFixed(1)+'%';
+      document.getElementById('ii-kamata').classList.remove('auto-field');
+      break;
+    case'ucesce':
+      document.getElementById('ii-ucesce').value=fmt(ink.ucesce);
+      document.getElementById('ii-ucesce').classList.remove('auto-field');
+      break;
+    case'rata':
+      // rata shown after calculation
+      break;
+    case'rok':
+      document.getElementById('ii-rok').value=ink.rok+' god';
+      document.getElementById('ii-rok').classList.remove('auto-field');
+      break;
+  }
+
+  // Recompute dependent values for inkrement
+  if(inkSubTab!=='rata') ink.rata=Math.round(inkPMT(ink.kredit,ink.kamata,ink.rok));
+  if(inkSubTab==='rata') ink.kredit=b.kredit; // kredit stays same
+
+  document.getElementById('ii-kredit').value=fmt(ink.kredit);
+  document.getElementById('ii-rata').value=fmt(ink.rata);
+  if(inkSubTab==='rata'){
+    document.getElementById('ii-rata').classList.remove('auto-field');
+  }
+
+  // ── Build delta analysis ──
+  const deltas=[];
+
+  if(inkSubTab==='kamata'){
+    // 1. Δ Rata (same ucesce, same rok)
+    const newRata=Math.round(inkPMT(b.kredit,ink.kamata,b.rok));
+    deltas.push({label:'Mesečna rata',base:fmt(b.rata),ink:fmt(newRata),delta:newRata-b.rata,unit:'€/mes',desc:'Isti kredit i rok'});
+
+    // 2. Δ Učešće (same rata, same rok) — how much less down payment for same monthly rate
+    const newKredit=Math.round(inkMaxKredit(b.rata,ink.kamata,b.rok));
+    const newUcesce=b.cena-newKredit;
+    deltas.push({label:'Učešće',base:fmt(b.ucesce),ink:fmt(newUcesce),delta:newUcesce-b.ucesce,unit:'€',desc:'Ista rata i rok'});
+
+    // 3. Δ Rok (same ucesce, same rata)
+    const newRok=inkRok(b.kredit,ink.kamata,b.rata);
+    const dRok=newRok-b.rok;
+    deltas.push({label:'Rok kredita',base:b.rok.toFixed(1)+' god',ink:newRok.toFixed(1)+' god',delta:dRok,unit:'god',desc:'Isti kredit i rata',fmtDelta:v=>(v>0?'+':'')+v.toFixed(1)+' god'});
+  }
+
+  if(inkSubTab==='ucesce'){
+    // 1. Δ Rata (same rok)
+    const newRata=Math.round(inkPMT(ink.kredit,b.kamata,b.rok));
+    deltas.push({label:'Mesečna rata',base:fmt(b.rata),ink:fmt(newRata),delta:newRata-b.rata,unit:'€/mes',desc:'Ista kamata i rok'});
+
+    // 2. Δ Rok (same rata)
+    const newRok=inkRok(ink.kredit,b.kamata,b.rata);
+    const dRok=newRok-b.rok;
+    deltas.push({label:'Rok kredita',base:b.rok.toFixed(1)+' god',ink:newRok.toFixed(1)+' god',delta:dRok,unit:'god',desc:'Ista kamata i rata',fmtDelta:v=>(v>0?'+':'')+v.toFixed(1)+' god'});
+  }
+
+  if(inkSubTab==='rata'){
+    // 1. Δ Učešće (same rok) — what down payment needed for higher rate
+    const newKredit=Math.round(inkMaxKredit(ink.rata,b.kamata,b.rok));
+    const newUcesce=b.cena-newKredit;
+    deltas.push({label:'Učešće',base:fmt(b.ucesce),ink:fmt(newUcesce),delta:newUcesce-b.ucesce,unit:'€',desc:'Ista kamata i rok'});
+
+    // 2. Δ Rok (same ucesce/kredit)
+    const newRok=inkRok(b.kredit,b.kamata,ink.rata);
+    const dRok=newRok-b.rok;
+    deltas.push({label:'Rok kredita',base:b.rok.toFixed(1)+' god',ink:newRok.toFixed(1)+' god',delta:dRok,unit:'god',desc:'Isti kredit i kamata',fmtDelta:v=>(v>0?'+':'')+v.toFixed(1)+' god'});
+  }
+
+  if(inkSubTab==='rok'){
+    // 1. Δ Rata (same ucesce)
+    const newRata=Math.round(inkPMT(b.kredit,b.kamata,ink.rok));
+    deltas.push({label:'Mesečna rata',base:fmt(b.rata),ink:fmt(newRata),delta:newRata-b.rata,unit:'€/mes',desc:'Isti kredit i kamata'});
+
+    // 2. Δ Učešće (same rata)
+    const newKredit=Math.round(inkMaxKredit(b.rata,b.kamata,ink.rok));
+    const newUcesce=b.cena-newKredit;
+    deltas.push({label:'Učešće',base:fmt(b.ucesce),ink:fmt(newUcesce),delta:newUcesce-b.ucesce,unit:'€',desc:'Ista rata i kamata'});
+  }
+
+  // ── Render delta cards ──
+  const incLabel={kamata:'Kamata '+inc+'pp',ucesce:'Učešće '+(inc>0?'+':'')+fmt(Math.abs(inc)),rata:'Rata '+(inc>0?'+':'')+inc+' €/mes',rok:'Rok '+inc+' god'};
+  let html=`<div style="font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:14px;letter-spacing:.05em">
+    INKREMENT: <span style="color:var(--blue);font-weight:700">${incLabel[inkSubTab]}</span>
+    <span style="margin-left:8px;opacity:.5">│</span>
+    <span style="margin-left:8px">Šta se menja ako ostali parametri budu isti kao u baznom?</span>
+  </div>`;
+
+  html+=`<div style="display:grid;gap:8px">`;
+  deltas.forEach(d=>{
+    const dVal=d.fmtDelta?d.fmtDelta(d.delta):((d.delta>0?'+':'')+Math.round(d.delta)+' '+d.unit);
+    const dColor=d.delta<0?'var(--green)':d.delta>0?'var(--red)':'var(--text3)';
+    html+=`<div style="display:grid;grid-template-columns:140px 1fr 1fr 1fr;align-items:center;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text1)">${d.label}</div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">${d.desc}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">BAZNI</div>
+        <div style="font-size:13px;color:var(--text2)">${d.base}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">INKREMENT</div>
+        <div style="font-size:13px;color:var(--text1);font-weight:600">${d.ink}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">DELTA</div>
+        <div style="font-size:15px;font-weight:700;color:${dColor};font-family:var(--mono)">${dVal}</div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  document.getElementById('inkDeltaContent').innerHTML=html;
+}
+
+// ══ INIT ══
+wireParametri();
+recalcParams();
+setupInputFormatting();
+newChat();
+</script>
+<script>
+// ══════════════════════════════════════════
+// ČUVANJE (Parametri, Prevremena otplata, Scenario otplate)
+// ══════════════════════════════════════════
+const SB_PANELS = ['tab-parametri', 'tab-otplata'];
+let sbSavedJSON = null, sbArtifact = null, sbReady = false;
+function sbCollect(){
+  const parametri = {};
+  SB_PANELS.forEach(pid => document.querySelectorAll('#' + pid + ' input[id]').forEach(el => { if(!el.readOnly) parametri[el.id] = el.value; }));
+  return { version: 3, parametri, scenario: { izabraniMesec: scAsOf, pre: scPre, faze: scPhases, uplate: scLumps } };
+}
+function sbApply(d){
+  if(!d) return;
+  if(d.parametri){ Object.entries(d.parametri).forEach(([id, v]) => { const el = document.getElementById(id); if(el && !el.readOnly) el.value = v; }); try{ recalcParams(); }catch(e){} }
+  const s = d.scenario;
+  if(s){
+    if(s.pre && typeof s.pre === 'object'){
+      scPre = Object.assign({}, scPre, s.pre);
+      if(!Array.isArray(scPre.dogadjaji)) scPre.dogadjaji = [];
+    }
+    if(validYm(s.izabraniMesec)) scAsOf = s.izabraniMesec;
+    if(Array.isArray(s.faze)) scPhases = s.faze;
+    if(Array.isArray(s.uplate)) scLumps = s.uplate;
+    scNextId = 1 + Math.max(0, ...scPhases.map(p => +p.id || 0), ...scLumps.map(l => +l.id || 0), ...scPre.dogadjaji.map(e => +e.id || 0));
+  }
+}
+function sbMarkDirty(){
+  if(!sbReady) return;
+  const el = document.getElementById('sbSaveStatus'); if(!el) return;
+  const dirty = JSON.stringify(sbCollect()) !== sbSavedJSON;
+  el.textContent = dirty ? 'Ima nesačuvanih izmena' : 'Sačuvano';
+  el.className = 'sb-status' + (dirty ? ' is-dirty' : '');
+}
+function sbStatus(t, dirty){ const el = document.getElementById('sbSaveStatus'); if(el){ el.textContent = t; el.className = 'sb-status' + (dirty ? ' is-dirty' : ''); } }
+async function sbSave(){
+  const snap = JSON.stringify(sbCollect());
+  if(snap === sbSavedJSON){ sbStatus('Nema izmena'); setTimeout(sbMarkDirty, 1500); return; }
+  if(!sbArtifact){ sbStatus('Čuvanje nije dostupno u ovom prikazu', true); return; }
+  sbStatus('Čuvam…');
+  try{
+    await sbArtifact.publish({ 'data/kalkulator.json': { content: JSON.stringify(JSON.parse(snap), null, 2), contentType: 'application/json' } });
+    sbSavedJSON = snap; sbMarkDirty();
+  }catch(err){
+    const c = err && err.code;
+    if(c === 'conflict') sbStatus('Neko je sačuvao noviju verziju, osvežavam', true);
+    else if(['not_writer','not_granted','capability_disabled','consent_required','capability_removed','not_declared'].includes(c)){ document.getElementById('sbSave').disabled = true; sbStatus('Ovaj prikaz ne može da čuva', true); }
+    else if(c === 'rate_limited') sbStatus('Previše čuvanja zaredom, sačekaj malo', true);
+    else sbStatus('Čuvanje nije uspelo, pokušaj ponovo', true);
+  }
+}
+SB_PANELS.forEach(pid => document.getElementById(pid).addEventListener('input', () => sbMarkDirty()));
+// Učešće dolazi iz Scenarija otplate (sve uplaćeno investitoru pre kredita), cena stana se deli sa scenarijom.
+(function sbLinkParams(){
+  const u = document.getElementById('p-ucesce');
+  if(u){
+    u.readOnly = true; u.classList.add('auto-field');
+    const lab = u.closest('.field') && u.closest('.field').querySelector('label');
+    if(lab) lab.textContent = 'Učešće (uplaćeno investitoru, iz Scenarija otplate)';
+  }
+  const c = document.getElementById('p-cena');
+  if(c) c.addEventListener('change', () => { const v = num('p-cena'); if(v > 0){ scPre.cena = v; renderScenario(); } });
+})();
+(async function sbBoot(){
+  try{ const r = await fetch('data/kalkulator.json', { cache: 'no-store' }); if(r.ok) sbApply(await r.json()); }catch(e){}
+  renderScenario();
+  try{ newChat(); }catch(e){}   // pozdrav u chatu sa stvarnim iznosom kredita
+  sbSavedJSON = JSON.stringify(sbCollect());
+  sbReady = true;
+  try{ sbArtifact = (window.claude && await window.claude.use('artifact')) || null; }catch(e){}
+  sbMarkDirty();
+})();
+</script>
+
+</body>
+</html>

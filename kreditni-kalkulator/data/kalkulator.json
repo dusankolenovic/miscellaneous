@@ -1,0 +1,92 @@
+{
+  "version": 3,
+  "parametri": {
+    "p-cena": "301.127",
+    "p-kamata": "4.5",
+    "p-rok": "15",
+    "p-prihod-cur": "4.491",
+    "p-prihod-neg": "2.200",
+    "p-prihod": "3.000",
+    "p-prihod-pos": "3.800",
+    "p-rashodi-cur": "1.546",
+    "p-rashodi-neg": "1.200",
+    "p-rashodi": "1.200",
+    "p-rashodi-por": "1.600",
+    "p-zena": "0",
+    "o-extra": "825",
+    "o-meseci": "12",
+    "o-godisnja": "10000",
+    "o-godina-uplate": "1"
+  },
+  "scenario": {
+    "izabraniMesec": "2027-12",
+    "pre": {
+      "cena": 301127,
+      "cenaBezPdv": 273751,
+      "povrsina": 54.86,
+      "pdvM2": 40,
+      "start": "2026-10",
+      "kredit": "2027-12",
+      "gotovina": 95000,
+      "odmah": 95000,
+      "plata": 4491,
+      "troskovi": 1546,
+      "prviMeseci": 7,
+      "prviPct": 100,
+      "zatimPct": 70,
+      "dogadjaji": [
+        {
+          "id": 101,
+          "label": "Produženje stana u kome živim (do juna 2027)",
+          "tip": "trosak",
+          "date": "2027-01",
+          "amount": 3000,
+          "ponavljanje": "jednom",
+          "do": "",
+          "investitoru": "pravilo"
+        },
+        {
+          "id": 102,
+          "label": "Bonus",
+          "tip": "prihod",
+          "date": "2027-04",
+          "amount": 10000,
+          "ponavljanje": "jednom",
+          "do": "",
+          "investitoru": "pravilo"
+        },
+        {
+          "id": 103,
+          "label": "Kirija za godinu dana",
+          "tip": "trosak",
+          "date": "2027-07",
+          "amount": 6000,
+          "ponavljanje": "12m",
+          "do": "",
+          "investitoru": "pravilo"
+        }
+      ]
+    },
+    "faze": [
+      {
+        "id": 202,
+        "label": "Prva godina: 1.500 € mesečno",
+        "from": "2028-01",
+        "months": 12,
+        "extra": 1500,
+        "tip": "ukupno",
+        "mode": "rata"
+      }
+    ],
+    "uplate": [
+      {
+        "id": 201,
+        "label": "Povrat PDV-a (prvi stan, 40 m²)",
+        "date": "2028-03",
+        "amount": 19961,
+        "pdv": true,
+        "mode": "rata"
+      }
+    ]
+  }
+}
