@@ -1,7 +1,7 @@
 {
   "version": 3,
   "parametri": {
-    "p-cena": "301.127",
+    "p-cena": "295.104",
     "p-kamata": "4.5",
     "p-rok": "15",
     "p-prihod-cur": "4.491",
@@ -21,8 +21,8 @@
   "scenario": {
     "izabraniMesec": "2027-12",
     "pre": {
-      "cena": 301127,
-      "cenaBezPdv": 273751,
+      "cena": 295104,
+      "cenaBezPdv": 268276,
       "povrsina": 54.86,
       "pdvM2": 40,
       "start": "2026-10",
@@ -59,9 +59,9 @@
           "id": 103,
           "label": "Kirija za godinu dana",
           "tip": "trosak",
-          "date": "2027-07",
+          "date": "2027-06",
           "amount": 6000,
-          "ponavljanje": "12m",
+          "ponavljanje": "jednom",
           "do": "",
           "investitoru": "pravilo"
         }
@@ -83,7 +83,7 @@
         "id": 201,
         "label": "Povrat PDV-a (prvi stan, 40 m²)",
         "date": "2028-03",
-        "amount": 19961,
+        "amount": 19561,
         "pdv": true,
         "mode": "rata"
       }
