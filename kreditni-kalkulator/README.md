@@ -3,7 +3,7 @@
 Kalkulator za kupovinu stana: uplate investitoru do podizanja kredita, pa otplata kredita po pravim mesecima.
 
 - `index.html`: ceo kalkulator (Parametri, Scenario otplate, Dnevnik po mesecima, grafikoni).
-- `uplate-investitoru.html`: jednostavna tabela mesečnih uplata investitoru (okt 2026 do nov 2027).
+- `uplate-investitoru.html`: jednostavna tabela mesečnih uplata investitoru (okt 2026 do dec 2027, uključujući mesec kredita).
 - `data/kalkulator.json`: sačuvani scenario (cena, plata, troškovi, događaji, povrat PDV-a, faze).
 
 Žive verzije:
