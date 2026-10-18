@@ -1067,7 +1067,7 @@ Možeš da menjaš parametre prevremene otplate:
 
 SCENARIO OTPLATE TAB:
 Tab "Scenario otplate" koristi prave mesece (format YYYY-MM) i ima dva dela.
-1) DO KREDITA (state.scenarioOtplate.doKredita): korisnik plaća investitoru od meseca prvaUplata do meseca pre podizanjaKredita (kada gradnja dostigne 60%).
+1) DO KREDITA (state.scenarioOtplate.doKredita): korisnik plaća investitoru od meseca prvaUplata do meseca podizanjaKredita, uključujući i taj mesec jer plata legne početkom meseca (kada gradnja dostigne 60%).
 Svaka uplata investitoru smanjuje kredit: iznosKredita = cenaSaPdv - uplacenoInvestitoru. Učešće u Parametrima se računa automatski iz ovog dela.
 Svaki mesec: ostatak = plata - troškovi + prihodi po pravilu - troškovi događaja; investitoru ide procenat ostatka (prviPct% prvih prviMeseci meseci, zatim zatimPct%), ostatak ostaje kao gotovina.
 Prvog meseca investitoru ide i "odmah" iz početne gotovine. Događaji: tip prihod/trosak, date, amount, ponavljanje (jednom, mesecno, 6m, 12m), do (opciono), investitoru (pravilo, sve, nista).
@@ -1341,7 +1341,7 @@ function simulatePre(p){
   p = p || scPre;
   const rows = [];
   let paid = 0, cash = 0, minCash = 0, minCashYm = null;
-  const months = validYm(p.start) && validYm(p.kredit) ? Math.max(0, ymDiff(p.start, p.kredit)) : 0;
+  const months = validYm(p.start) && validYm(p.kredit) ? Math.max(0, ymDiff(p.start, p.kredit) + 1) : 0;   // mesec kredita ide investitoru (plata legne početkom meseca)
   for(let i = 0; i < months; i++){
     const ym = ymAdd(p.start, i);
     let ruleIncome = 0, direct = 0, keep = 0, costs = 0;
@@ -1553,7 +1553,7 @@ function renderPreResults(pre){
     </tr>`).join('');
   el.innerHTML = `
   <div class="sb-metrics">
-    <div><span>Uplaćeno investitoru</span><b>${sbNum(pre.paid)} €</b><small>${pre.sharePaid.toFixed(1)}% cene, do ${ymFmt(ymAdd(scPre.kredit, -1))}</small></div>
+    <div><span>Uplaćeno investitoru</span><b>${sbNum(pre.paid)} €</b><small>${pre.sharePaid.toFixed(1)}% cene, do ${ymFmt(scPre.kredit)}</small></div>
     <div><span>Iznos kredita</span><b>${sbNum(pre.loan)} €</b><small>podiže se u ${ymFmt(scPre.kredit)}</small></div>
     <div><span>Gotovina kod tebe</span><b>${sbNum(pre.cash)} €</b><small>na dan podizanja kredita</small></div>
     <div><span>Cena</span><b>${sbNum(scPre.cena)} €</b><small>bez PDV-a ${sbNum(scPre.cenaBezPdv)} €, PDV ${sbNum(scPre.cena - scPre.cenaBezPdv)} €</small></div>
@@ -1614,7 +1614,7 @@ function renderScenarioTimeline(pre, result){
   const origin = scPre.start;
   const total = Math.max(1, ymDiff(origin, result.endYm) + 1);
   const pos = ym => Math.max(0, Math.min(100, ymDiff(origin, ym) / total * 100));
-  const preSeg = `<div class="sb-tl-seg sb-tl-pre" style="left:0;width:${pos(scPre.kredit)}%" title="Uplate investitoru: ${ymFmt(scPre.start)} do ${ymFmt(ymAdd(scPre.kredit,-1))}"></div>`;
+  const preSeg = `<div class="sb-tl-seg sb-tl-pre" style="left:0;width:${pos(scPre.kredit)}%" title="Uplate investitoru: ${ymFmt(scPre.start)} do ${ymFmt(scPre.kredit)}"></div>`;
   const segs = scPhases.map((ph, i) => {
     if(!validYm(ph.from)) return '';
     return `<div class="sb-tl-seg" style="left:${pos(ph.from)}%;width:${Math.max(0, pos(ymAdd(ph.from, ph.months)) - pos(ph.from))}%;background:${SC_COLORS[i % SC_COLORS.length]}" title="${sbEsc(ph.label)}"></div>`;
@@ -1881,7 +1881,7 @@ function renderLedger(){
   const loanHtml = loanRows.map(r => `<tr class="${cls(r)}"><td class="lg-when">${r.when}</td><td class="lg-what">${notes(r)}</td><td class="n">${eur(r.paid)}</td><td class="n">${fmt(r.rata)}</td><td class="n lg-dim">${fmt(r.dug)}</td></tr>`).join('');
   el.innerHTML = `
   <section class="lg-sec">
-    <header><h3>Uplate investitoru</h3><p>${ymFmt(scPre.start)} do ${ymFmt(ymAdd(scPre.kredit, -1))}, ukupno ${eur(pre.paid)}</p></header>
+    <header><h3>Uplate investitoru</h3><p>${ymFmt(scPre.start)} do ${ymFmt(scPre.kredit)}, ukupno ${eur(pre.paid)}</p></header>
     <table class="lg-table lg-pre"><thead><tr><th>Mesec</th><th>Opis</th><th class="n">Uplaćeno</th></tr></thead><tbody>${preHtml}</tbody></table>
   </section>
   <div class="lg-milestone"><span>${ymFmt(scPre.kredit)}</span><b>Banka isplaćuje kredit od ${eur(pre.loan)}</b><em>Stan je isplaćen u celosti, prva rata je u ${ymFmt(scStart)}.</em></div>
